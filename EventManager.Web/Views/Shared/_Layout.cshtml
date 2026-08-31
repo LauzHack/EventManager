@@ -1,0 +1,207 @@
+@model PageModel
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    @if (Model.Config.EventDetails is null)
+    {
+        <title>Setup</title>
+    }
+    else
+    {
+        <title>@Model.View.Title - @Model.Config.EventDetails.Title</title>
+    }
+
+    <link rel="stylesheet" href="/style.css" />
+
+    @if (Model.Config.EventTheme is not null)
+    {
+        var bg = Model.Config.EventTheme.BackgroundColor;
+
+        <link rel="icon" type="@Model.Config.EventTheme.IconMimeType" href="/File/@Model.Config.EventTheme.IconFileId">
+        <style>
+            :root {
+                --pico-primary: @bg !important;
+                --pico-primary-background: @bg !important;
+                --pico-primary-underline: rgb(@bg.Red @bg.Green @bg.Blue / 0.5) !important;
+                --pico-primary-hover: hsl(from rgb(@bg.Red @bg.Green @bg.Blue) h calc(s * 0.9) l) !important;
+                --pico-primary-hover-background: hsl(from rgb(@bg.Red @bg.Green @bg.Blue) h calc(s * 1.1) l) !important;
+                --pico-primary-hover-focus: hsl(from rgb(@bg.Red @bg.Green @bg.Blue) h calc(s * 1.1) l / 50%) !important;
+                --pico-primary-inverse: @Model.Config.EventTheme.ForegroundColor !important;
+            }
+        </style>
+    }
+
+    @* Propagate the 'utm_source' URL arg before we clean the URL, so that it being in the login link via email leads to it being in the name edit form, without using cookies *@
+    <script>
+        let params = new URLSearchParams(document.location.search);
+        const referrerFromUrl = params.get("utm_source");
+    </script>
+
+    @* If possible, edit the URL to ensure users don't accidentally re-submit forms and to look cleaner *@
+    @if (Model.Uri is not null)
+    {
+        <script>
+            history.replaceState(null, "", window.location.origin + String.raw`@Html.Raw(Model.Uri.ToString())`)
+        </script>
+    }
+
+    @* Trigger a 'load' event for all inputs once the page is loaded; see InputTagHelper *@
+    <script>window.addEventListener('load', () => document.querySelectorAll('input, textarea, select').forEach(e => e.dispatchEvent(new Event('load'))));</script>
+</head>
+<body>
+    <script>
+        @* Utilities to replace the ugly browser built-in alert / confirm dialogs, using the <dialog> elements right below *@
+        function showAlert(title, message) {
+            const dialog = document.getElementById('alert-dialog');
+            if (title === '') {
+                document.getElementById('alert-header').style.display = 'none';
+            } else {
+                document.getElementById('alert-header').style.display = 'revert';
+                document.getElementById('alert-title').textContent = title;
+            }
+            document.getElementById('alert-message').innerHTML = message;
+            document.getElementById('alert-ok').onclick = () => dialog.close();
+            dialog.showModal();
+        }
+        function confirmAction(event, message) {
+            event.preventDefault();
+            const dialog = document.getElementById('confirm-dialog');
+            document.getElementById('confirm-message').innerHTML = message;
+            const form = event.currentTarget.form;
+            const yesBtn = document.getElementById('confirm-yes');
+            const noBtn = document.getElementById('confirm-no');
+            const cleanup = () => { yesBtn.onclick = null; noBtn.onclick = null; };
+            yesBtn.onclick = () => { cleanup(); dialog.close(); form.submit(); };
+            noBtn.onclick = () => { cleanup(); dialog.close(); };
+            dialog.showModal();
+        }
+    </script>
+    <dialog id="alert-dialog">
+        <article>
+            <header id="alert-header">
+                <p><strong id="alert-title"></strong></p>
+            </header>
+            <p id="alert-message"></p>
+            <footer>
+                <button id="alert-ok">OK</button>
+            </footer>
+        </article>
+    </dialog>
+    <dialog id="confirm-dialog">
+        <article>
+            <header>
+                <p><strong>Confirm</strong></p>
+            </header>
+            <p id="confirm-message"></p>
+            <footer>
+                <button id="confirm-yes">Yes</button>
+            </footer>
+            <footer>
+                <button id="confirm-no">Cancel</button>
+            </footer>
+        </article>
+    </dialog>
+
+    @{
+        var navBackground = Model.Config.EventTheme is null ? "" : $"background: {Model.Config.EventTheme.BackgroundColor};";
+    }
+    <nav style="@navBackground padding: 0.5em 1em">
+        <ul>
+            <li>
+                @if (Model.Config.EventTheme is not null)
+                {
+                    <img src="/File/@Model.Config.EventTheme.LogoFileId"
+                         style="height: 2.5em"
+                         alt="@Model.Config.EventDetails?.Title">
+                }
+            </li>
+        </ul>
+        @if (Model.Config.EventDetails is not null)
+        {
+            var linkColor = Model.Config.EventTheme is null ? "" : $"color: {Model.Config.EventTheme.ForegroundColor};";
+            var privacyPolicy = JsonSerializer.Serialize(Markdown.ToHtml(Model.Config.EventDetails.PrivacyPolicy));
+            <ul>
+                <li>
+                    <a style="@linkColor" href="#" onclick="event.preventDefault(); showAlert('Privacy Policy', @privacyPolicy);">Privacy policy</a>
+                </li>
+                <li>
+                    <a style="@linkColor" href="@Model.Config.EventDetails.HelpUrl" target="_blank">Help</a>
+                </li>
+            </ul>
+        }
+    </nav>
+    <main>
+        @if (Model.Status is not Status.None)
+        {
+            var renderedMessage = Markdown.ToHtml(Model.Message);
+            <article class="@(Model.Status >= Status.UserError ? "error" : "info")">
+                <p>@Html.Raw(renderedMessage)</p>
+            </article>
+            if (Model.Status is not Status.Success)
+            {
+                var title = Model.Status is Status.ImportantInformation ? "" : "Error";
+                <script>showAlert('@title', '@Html.Raw(renderedMessage.ReplaceLineEndings("\\n"))')</script>
+            }
+        }
+
+        <h1>@Model.View.Title</h1>
+        @RenderBody()
+
+        @if (Model.AvailableViews.Count(v => v.Summary.Length > 0 || v.Action is not null) > 0)
+        {
+            <footer>
+                <table>
+                    <colgroup>
+                        <col style="width: 35%" />
+                        <col />
+                    </colgroup>
+                    @foreach (var view in Model.AvailableViews)
+                    {
+                        if (view.Summary.Length > 0 || view.Action is not null || (view.IsRequired && view != Model.View))
+                        {
+                            <tr>
+                                <td><strong>@view.Title</strong></td>
+                                <td>
+                                    @if (view.Action is not null || view.IsRequired)
+                                    {
+                                        <a href="@(Operation.CreatePageView(view.Page).RelativeUri)">
+                                            @(view.Action ?? "Go")
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                            @foreach (var item in view.Summary)
+                            {
+                                <tr>
+                                    <td>@item.Label</td>
+                                    <td>@item.Text</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td colspan="2"></td>
+                            </tr>
+                        }
+                    }
+                </table>
+            </footer>
+        }
+    </main>
+    <script>
+        @* Ensure that checkboxes send either 'true' or 'false', not the default of 'on' or nothing (except those with an explicit 'value' attribute) *@
+        for (const form of document.forms) {
+            form.addEventListener("formdata", e => {
+                let checkboxes = form.querySelectorAll('input[type="checkbox"]:not([value])')
+                for (const checkbox of checkboxes) {
+                    e.formData.delete(checkbox.name)
+                }
+                for (const checkbox of checkboxes) {
+                    e.formData.append(checkbox.name, checkbox.checked ? "true" : "false")
+                }
+            })
+        }
+    </script>
+</body>
+</html>

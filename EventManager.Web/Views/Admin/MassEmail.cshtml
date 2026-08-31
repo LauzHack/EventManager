@@ -1,0 +1,75 @@
+@model PageModel
+
+<section>
+    <p>
+        You can send batches of emails here. Don't spam!
+    </p>
+</section>
+
+<section>
+    <h2>Participants</h2>
+    <form action="/Admin/MassEmail/SendToParticipants">
+        <select x-label="Status"
+                x-label-details="The email will be sent only to participants with the selected status."
+                name="status"
+                required>
+            @* Deliberately no option for those who withdrew (and thus don't want to be contacted) or who created an account but didn't verify their email address yet *@
+            <option data-min-status="Rejected" data-max-status="DidNotConfirm">Rejected (including those who did not confirm in time)</option>
+            <option data-min-status="EmailAddressVerified" data-max-status="ProfileFilled">Not yet finalized</option>
+            <option data-min-status="Finalized" data-max-status="Finalized">Finalized</option>
+            <option data-min-status="Accepted" data-max-status="Confirmed">Accepted (confirmed or not)</option>
+            <option data-min-status="Confirmed" data-max-status="Confirmed">Confirmed</option>
+            <option data-min-status="CheckedIn" data-max-status="Demoed">Checked in</option>
+            <option data-min-status="Demoed" data-max-status="Demoed">Checked in and demoed a project</option>
+        </select>
+
+        <input x-label="Subject"
+               name="subject"
+               required
+               type="text" />
+
+        <textarea x-label="Body"
+                  name="body"
+                  required></textarea>
+
+        <input x-label="Include link logging recipients in to this website"
+               name="includeViewOperation"
+               type="checkbox" />
+
+        <button onclick="confirmAction(event, 'Are you sure?');">
+            Send
+        </button>
+    </form>
+</section>
+
+<section>
+    <h2>Non-participants</h2>
+    <form action="/Admin/MassEmail/SendToEmailAddresses">
+        <textarea x-label="Email addresses, one per line, of the recipients"
+                  name="emailAddresses-all"
+                  required></textarea>
+
+        <input x-label="Subject"
+               name="subject"
+               required
+               type="text" />
+
+        <textarea x-label="Body"
+                  name="body"
+                  required></textarea>
+
+        <input x-label="Include a link to apply"
+               x-enforce-usable-when-checked="applicationReferrer"
+               name="includeApplicationLink"
+               type="checkbox" />
+
+        <input x-label="Referrer when applying through the link (optional)"
+               name="applicationReferrer"
+               required
+               type="text" />
+
+        <button onclick="confirmAction(event, 'Are you sure?');">
+            Send
+        </button>
+    </form>
+</section>

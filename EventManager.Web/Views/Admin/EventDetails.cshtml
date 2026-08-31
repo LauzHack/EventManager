@@ -1,0 +1,74 @@
+@model PageModel
+
+@{
+    var timezones = from timezone in TimeZoneInfo.GetSystemTimeZones()
+                    // On Windows the ID is a Windows ID for historical reasons, let's always use IANA
+                    let id = (!timezone.HasIanaId && TimeZoneInfo.TryConvertWindowsIdToIanaId(timezone.Id, out string? ianaId)) ? ianaId : timezone.Id
+                    where id is not null // not worth supporting, what even falls in there?
+                    select (id, timezone.DisplayName);
+}
+
+<section>
+    <form action="/Admin/EventDetails/Edit">
+        <input x-label="Title"
+               name="details.Title"
+               required
+               type="text"
+               value="@Model.Config.EventDetails?.Title" />
+
+        <input x-label="Location"
+               name="details.Location"
+               required
+               type="text"
+               value="@Model.Config.EventDetails?.Location" />
+
+        <select x-label="Time zone"
+                name="details.TimeZone"
+                required>
+            @foreach (var (id, displayName) in timezones)
+            {
+                <option value="@id" selected="@(Model.Config.EventDetails?.TimeZone == id)">@displayName</option>
+            }
+        </select>
+
+        <input x-label="Start"
+               name="details.Start"
+               required
+               type="datetime-local"
+               value="@Model.Config.EventDetails?.Start.ToString("yyyy-MM-ddTHH:mm")" />
+
+        <input x-label="End"
+               x-enforce-after="details.Start"
+               name="details.End"
+               required
+               type="datetime-local"
+               value="@Model.Config.EventDetails?.End.ToString("yyyy-MM-ddTHH:mm")" />
+
+        <textarea x-label='Extra text in confirmation emails'
+                  x-label-can-use-markdown="true"
+                  name="details.ConfirmationText"
+                  required
+                  placeholder="Anything that confirmed participants should know about, like details on travel reimbursement.">@Model.Config.EventDetails?.ConfirmationText</textarea>
+
+        <input x-label="Website URL" name="details.WebsiteUrl"
+               required
+               type="url"
+               value="@Model.Config.EventDetails?.WebsiteUrl" />
+
+        <input x-label="URL to the help / frequently asked questions page"
+               name="details.HelpUrl"
+               required
+               type="url"
+               value="@Model.Config.EventDetails?.HelpUrl" />
+
+        <textarea x-label="Privacy policy"
+                  x-label-can-use-markdown="true"
+                  name="details.PrivacyPolicy"
+                  required
+                  placeholder="Who can see user data? How long is it retained for? What info will be made public? What other data may be transferred to third parties?">@Model.Config.EventDetails?.PrivacyPolicy</textarea>
+
+        <button>
+            Save
+        </button>
+    </form>
+</section>

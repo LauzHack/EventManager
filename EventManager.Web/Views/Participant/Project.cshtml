@@ -1,0 +1,178 @@
+@model PageModel<ProjectPage.Model, Participant>
+
+@{
+    List<Hint> hints = [
+        new(
+            "💭",
+            "**Name** your project.",
+            "Be imaginative so you stand out, avoid being one of many similar-sounding titles."
+        ),
+        new(
+            "📋",
+            "**Describe** your project in one short sentence and in a longer paragraph.",
+            "These will be used to summarize projects for the jury and on the public projects gallery."
+        ),
+        new(
+            "🔗",
+            "**Link** to your source code, data, etc. **Please double-check the link is publicly accessible.**",
+            "No need to upload files here, host them somewhere and link to them instead."
+        ),
+        new(
+            "🖼️",
+            "Upload an **image** representing your project, such as a logo or screenshot.",
+            "This image will be shown in the public projects gallery."
+        )
+    ];
+    if (Model.Data.ChallengeSetters.Count > 0)
+    {
+        hints.Add(new(
+            "❓",
+            "Select the **challenges** your project answers to, if any.",
+            "This is used to arrange judging. You don't have to pick challenges if you'd rather work entirely on your own idea."
+        ));
+    }
+    hints.Add(new(
+        "✅",
+        "**Submit** the project. You can still edit it later.",
+        Model.Config.EventLimits!.ProjectTeamSize > 1 ? "Only one person per team should do this." : ""
+    ));
+    if (Model.Config.EventLimits!.ProjectTeamSize > 1)
+    {
+        hints.Add(new(
+            "👥",
+            "Once the project is created, **invite** any team members.",
+            "This is necessary both to give credit in the public projects gallery and to arrange judging."
+        ));
+    }
+}
+
+<section>
+    @if (Model.Data.Project is null)
+    {
+        <p>
+            You are not associated with a project.
+            @if (Model.Config.EventLimits!.ProjectTeamSize > 1)
+            {
+                @:Submit one, or wait for someone to invite you to one.
+            }
+        </p>
+    }
+    @foreach (var hint in hints)
+    {
+        <div class="hint">
+            <p>@hint.Emoji</p>
+            @Html.Raw(Markdown.ToHtml(hint.FullDescription))
+        </div>
+    }
+</section>
+
+
+@if (Model.Data.InvitedProjects.Count > 0)
+{
+    <section>
+        <h2>Invitations</h2>
+        <p>
+            You have been invited to join the following:
+        </p>
+        @foreach (var project in Model.Data.InvitedProjects)
+        {
+            <form action="/Participant/Project/Join">
+                <fieldset role="group">
+                    <p>
+                        <strong>@project.Title</strong>
+                        <br />
+                        <small>@(string.Join(", ", project.Team.Select(p => p.FullName)))</small>
+                    </p>
+
+                    <input name="id"
+                           type="hidden"
+                           value="@project.Id" />
+
+                    <button onclick="confirmAction(event, 'Are you sure you want to join @project.Title?');">
+                        Join
+                    </button>
+                </fieldset>
+            </form>
+        }
+    </section>
+}
+
+<section>
+    <h2>Submit a project</h2>
+    <form action="/Participant/Project/Edit">
+        <input x-label="Title"
+               name="title"
+               required
+               type="text"
+               maxlength="@Project.MaxTitleLength"
+               value="@Model.Data.Project?.Title" />
+
+        <input x-label="Short description"
+               name="shortDescription"
+               required
+               type="text"
+               maxlength="@Project.MaxShortDescriptionLength"
+               value="@Model.Data.Project?.ShortDescription" />
+
+        <textarea x-label="Long description"
+                  name="longDescription"
+                  required
+                  type="text"
+                  maxlength="@Project.MaxLongDescriptionLength">@Model.Data.Project?.LongDescription</textarea>
+
+        <input x-label="Link to the project homepage, such as a GitHub repository with a 'read me', code, and data"
+               name="link"
+               required
+               type="url"
+               value="@Model.Data.Project?.Link" />
+
+        <input x-label="Thumbnail image"
+               x-existing-file-id="@Model.Data.Project?.ThumbnailId"
+               x-existing-file-preview-height="30vh"
+               name="thumbnail"
+               required="@(Model.Data.Project is null ? "required" : null)"
+               type="file"
+               accept="image/*"
+               x-max-file-size="@Project.MaxThumbnailSizeInBytes" />
+
+        @if (Model.Data.ChallengeSetters.Any(c => !c.IsChallengeOptIn))
+        {
+            <fieldset>
+                <legend>
+                    Challenges this project opts into, if any:
+                </legend>
+                @foreach (var challenge in Model.Data.ChallengeSetters.Where(c => c.IsChallengeOptIn))
+                {
+                    <input x-label="@challenge.Name"
+                           name="challenges"
+                           type="checkbox"
+                           value="@challenge.Name"
+                           checked="@(Model.Data.Project?.Challenges.Contains(challenge.Name) is true ? "checked" : null)" />
+                }
+            </fieldset>
+        }
+
+        @if (Model.Data.Project is null)
+        {
+            @if (Model.Config.EventLimits!.ProjectTeamSize > 1)
+            {
+                <p>
+                    You can add project team members after creating the project.
+                </p>
+            }
+            <p>
+                You can edit the project details later.
+            </p>
+
+            <button>
+                Submit
+            </button>
+        }
+        else
+        {
+            <button>
+                Save
+            </button>
+        }
+    </form>
+</section>

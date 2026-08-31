@@ -1,0 +1,11 @@
+@* Integrate CSS into the page on the first load so it's self-contained *@
+<script>
+    if (document.querySelector('style') === null) {
+        (async function() {
+            var response = await fetch(`/style.css`)
+            var tag = document.createElement('style');
+            tag.innerHTML = await response.text();
+            document.head.appendChild(tag);
+        })();
+    }
+</script>

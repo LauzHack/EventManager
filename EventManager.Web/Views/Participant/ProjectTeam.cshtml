@@ -1,0 +1,146 @@
+@model PageModel<EventManager.ParticipantPages.ProjectTeamPage.Model, Participant>
+
+<section>
+    @if (Model.Config.EventStatus is not EventStatus.JudgingStarted)
+    {
+        @* This needs to be extremely obvious or some participants panic *@
+        <p>
+            <strong>You can still <a href="/Participant/Project">edit your project</a>.</strong>
+        </p>
+    }
+
+    @if (Model.Data.Project.Team.Count > 1)
+    {
+        <p>Your project team:</p>
+        @foreach (var member in Model.Data.Project.Team.OrderByName())
+        {
+            <form action="/Participant/ProjectTeam/RemoveMember">
+                <fieldset role="group">
+                    <p>@member.FullName</p>
+
+                    <input name="emailAddress"
+                           type="hidden"
+                           value="@member.EmailAddress" />
+
+                    @if (member.EmailAddress.Equals(Model.User.EmailAddress, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <button onclick="confirmAction(event, 'Are you sure you want to leave your project?');">
+                            Leave
+                        </button>
+                    }
+                    else
+                    {
+                        <button onclick="confirmAction(event, 'Are you sure you want to remove @member.FullName from your project team?');">
+                            Remove
+                        </button>
+                    }
+                </fieldset>
+            </form>
+        }
+    }
+    else if (Model.Config.EventLimits!.ProjectTeamSize > 1)
+    {
+        <p>You are currently alone in your project team.</p>
+    }
+</section>
+
+@if (Model.Config.EventLimits!.ProjectTeamSize > 1)
+{
+    @if (Model.Data.Project.Team.Count + Model.Data.Project.InvitedParticipants.Count == Model.Config.EventLimits!.ProjectTeamSize)
+    {
+        <section>
+            <p>
+                You cannot invite any more people in your project team as it already has enough members/invitations.
+            </p>
+        </section>
+    }
+    else
+    {
+        <section>
+            <h2>Send invitations</h2>
+            <p>
+                Invite someone to your project:
+            </p>
+            <form action="/Participant/ProjectTeam/Invite">
+                <fieldset role="group">
+                    <input name="emailAddress"
+                           required
+                           type="email"
+                           placeholder="e.g., alice@example.org" />
+
+                    <button>
+                        Invite
+                    </button>
+                </fieldset>
+            </form>
+        </section>
+
+        var applicationMates = Model.Data.Group.Members
+                                    .Where(m => m.Status >= ParticipantStatus.CheckedIn && !Model.Data.Project.Team.Contains(m))
+                                    .OrderByName()
+                                    .ToArray();
+        if (applicationMates.Length > 0)
+        {
+            <section>
+                <p>
+                    Want to invite the people you applied with to join your project team? <em>(you don't have to)</em>
+                </p>
+                @foreach (var mate in applicationMates)
+                {
+                    <form action="/Participant/ProjectTeam/Invite">
+                        <fieldset role="group">
+                            <p>@mate.FullName</p>
+                            <input name="emailAddress"
+                                   type="hidden"
+                                   value="@mate.EmailAddress" />
+
+                            <button>
+                                Invite
+                            </button>
+                        </fieldset>
+                    </form>
+                }
+            </section>
+        }
+    }
+
+    @if (Model.Data.Project.InvitedParticipants.Count > 0)
+    {
+        <section>
+            <h2>Pending invitations</h2>
+            <p>
+                Your project team has invited the following:
+            </p>
+            @foreach (var invited in Model.Data.Project.InvitedParticipants)
+            {
+                <form action="/Participant/ProjectTeam/CancelInvitation">
+                    <fieldset role="group">
+                        <p>@invited.FullName</p>
+
+                        <input name="emailAddress"
+                               type="hidden"
+                               value="@invited.EmailAddress" />
+
+                        <button onclick="confirmAction(event, 'Are you sure you want to cancel the invitation for @invited.FullName?');">
+                            Cancel
+                        </button>
+                    </fieldset>
+                </form>
+            }
+        </section>
+    }
+}
+
+<section>
+    @if (Model.Config.EventHints.PresentationHintsHeader != "")
+    {
+        <h2>@Model.Config.EventHints.PresentationHintsHeader</h2>
+    }
+    @foreach (var hint in Model.Config.EventHints.PresentationHints)
+    {
+        <div class="hint">
+            <p>@hint.Emoji</p>
+            @Html.Raw(Markdown.ToHtml(hint.FullDescription))
+        </div>
+    }
+</section>

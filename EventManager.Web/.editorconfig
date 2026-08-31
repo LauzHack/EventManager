@@ -1,0 +1,3 @@
+[*.cs]
+# Making stuff internal -- but we want to test it, and InternalsVisibleTo is an abomination
+dotnet_diagnostic.CA1515.severity = none

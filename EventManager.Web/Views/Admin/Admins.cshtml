@@ -1,0 +1,83 @@
+@model PageModel<IReadOnlyCollection<Admin>, Admin>
+
+@{
+    var otherAdmins = Model.Data.Where(a => a.EmailAddress != Model.User.EmailAddress).ToArray();
+}
+
+@if (otherAdmins.Length > 0)
+{
+    <section>
+        <p>
+            Besides you (@Model.User.EmailAddress), the following admins exist:
+        </p>
+        @foreach (var admin in otherAdmins)
+        {
+            <fieldset role="group">
+                <p>
+                    <strong>@admin.EmailAddress</strong>
+                    (<button form="addForm-@admin.EmailAddress" role="link">resend login link</button>)
+                    <br />
+                    @(admin.IsOwner ? "Has ownership rights" : "Does not have ownership rights")
+                    (<button form="editForm-@admin.EmailAddress" role="link">@(admin.IsOwner ? "remove rights" : "give rights")</button>)
+                </p>
+
+                <button form="removeForm-@admin.EmailAddress">
+                    Remove
+                </button>
+
+                <form id="addForm-@admin.EmailAddress"
+                      action="/Admin/Admins/Add">
+                    <input name="emailAddress"
+                           type="hidden"
+                           value="@admin.EmailAddress" />
+                    <input name="isOwner"
+                           type="hidden"
+                           value="@(admin.IsOwner ? "true" : "false")" />
+                </form>
+                <form id="removeForm-@admin.EmailAddress"
+                      action="/Admin/Admins/Remove">
+                    <input name="emailAddress"
+                           type="hidden"
+                           value="@admin.EmailAddress" />
+                </form>
+                <form id="editForm-@admin.EmailAddress"
+                      action="/Admin/Admins/Add">
+                    <input name="emailAddress"
+                           type="hidden"
+                           value="@admin.EmailAddress" />
+                    <input name="isOwner"
+                           type="hidden"
+                           value="@(admin.IsOwner ? "false" : "true")" />
+                </form>
+            </fieldset>
+        }
+    </section>
+}
+
+<section>
+    <h2>Add admin</h2>
+    @if (otherAdmins is [])
+    {
+        <p>
+            There are currently no other admins. Why not add one, so that someone else has access if you are unavailable?
+        </p>
+    }
+    <p>
+        There are two types of admins, with and without ownership rights.
+        Only admins with ownership rights can update the event state, such as closing applications.
+    </p>
+    <form action="/Admin/Admins/Add">
+        <input x-label="Email address"
+               name="emailAddress"
+               required
+               type="email" />
+
+        <input x-label="Give ownership rights"
+               name="isOwner"
+               type="checkbox" />
+
+        <button>
+            Add
+        </button>
+    </form>
+</section>

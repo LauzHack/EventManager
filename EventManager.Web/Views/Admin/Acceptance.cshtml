@@ -1,0 +1,263 @@
+@model PageModel<AcceptancePage.Model, Admin>
+
+<script src="~/pagination.js"></script>
+
+<section>
+    <p>
+        There are currently @Model.Data.AcceptedParticipants.Count accepted participants.
+    </p>
+    @if (Model.Config.EventStatus < EventStatus.ApplicationsClosed)
+    {
+        <p>
+            Send a link to this website to the people who want to participate: <span id="linkSpan"></span>
+            <script>
+                document.getElementById('linkSpan').textContent = document.location.origin;
+            </script>
+            <br />
+            Append a <code>utm_source</code> parameter to the URL, e.g., <code>?utm_source=example</code>,
+            to see which participants came from which referrer.
+        </p>
+    }
+    @if (Model.Data.FinalizedGroups.Count == 0)
+    {
+        <p>
+            Nobody has finalized their application yet.
+        </p>
+    }
+</section>
+
+@if (Model.Data.FinalizedGroups.Count > 0)
+{
+    <section>
+        <h2>Accept in bulk</h2>
+        <p>
+            This is the main mode of acceptance.
+        </p>
+        @if (Model.Config.EventLimits!.ApplicationGroupSize > 1)
+        {
+            <p>
+                Note that if you use a filter, a group can be selected if at least one of its members matches the filter, not necessarily all of them.
+            </p>
+        }
+        <form action="/Admin/Acceptance/Accept">
+            <input x-label="How many?"
+                   x-label-details="@(Model.Config.EventLimits!.ApplicationGroupSize > 1 ? $"The actual number may be up to {Model.Config.EventLimits!.ApplicationGroupSize - 1} more due to groups" : null)"
+                   name="count"
+                   required
+                   type="number"
+                   min="1" />
+
+            <select name="random"
+                    required>
+                <option value="true" selected>At random</option>
+                <option value="false">First-come first-served</option>
+            </select>
+
+            @if (Model.Config.ProfileForm!.FreeChoices.Any())
+            {
+                <fieldset role="group">
+                    <select x-label="Optional: where..." name="attribute">
+                        <option label="" selected></option>
+                        @foreach (var text in Model.Config.ProfileForm!.FreeChoices)
+                        {
+                            <option value="@text.Name">@text.Name</option>
+                        }
+                    </select>
+
+                    <select x-label="is..."
+                            name="equality"
+                            required>
+                        <option value="true" selected>equal to (case insensitive)</option>
+                        <option value="false">not equal to</option>
+                    </select>
+
+                    <input x-label="this value:"
+                           name="value"
+                           type="text"
+                           placeholder="..." />
+                </fieldset>
+            }
+            else
+            {
+                <input name="attribute" value="" type="hidden" />
+                <input name="equality" value="true" type="hidden" />
+                <input name="value" value="" type="hidden" />
+            }
+
+            <button>
+                Accept
+            </button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Accept specific people</h2>
+        <p>
+            Search for specific @(Model.Config.EventLimits!.ApplicationGroupSize > 1 ? "groups of " : "")people to accept.
+        </p>
+        <input id="finalizedSearch"
+               type="search"
+               placeholder="Filter by name or email address..."
+               autocomplete="off" />
+        <table id="finalized">
+            @foreach (var group in Model.Data.FinalizedGroups)
+            {
+                bool first = true;
+                var search = string.Join(" ", group.Members.Select(m => m.EmailAddress + " " + m.FullName));
+                <tbody data-search="@search">
+                    @foreach (var participant in group.Members)
+                    {
+                        <tr>
+                            <td>
+                                <p>
+                                    <strong>@participant.FullName</strong>
+                                </p>
+                                @if (participant.IsSoftRejected)
+                                {
+                                    <p>(soft rejected)</p>
+                                }
+                                <p>
+                                    <small>@participant.EmailAddress</small>
+                                </p>
+                            </td>
+                            @if (first)
+                            {
+                                <td rowspan="@group.Members.Count">
+                                    <p style="text-align: center">
+                                        finalized on @group.FinalizationDate.ToString("g")
+                                    </p>
+                                </td>
+                                <td rowspan="@group.Members.Count">
+                                    <form action="/Admin/Acceptance/AcceptSpecific">
+                                        <input name="emailAddress"
+                                               type="hidden"
+                                               value="@participant.EmailAddress" />
+                        
+                                        <input name="givenName"
+                                               type="hidden"
+                                               value="@participant.GivenName" />
+                        
+                                        <input name="familyName"
+                                               type="hidden"
+                                               value="@participant.FamilyName" />
+
+                                        @if (group.Members.Any(m => m.IsSoftRejected))
+                                        {
+                                            <button disabled>
+                                                Soft rejected
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button onclick="confirmAction(event, 'Accept @string.Join(", ", group.Members.Select(m => m.FullName))?');">
+                                                Accept
+                                            </button>
+                                        }         
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                        first = false;
+                    }
+                </tbody>
+            }
+        </table>
+        <script>
+            setupPagination({
+                root: '#finalized',
+                itemsSelector: 'tbody',
+                pageSize: 1,
+                searchSelector: '#finalizedSearch',
+                emptyMessage: 'No finalized participants match the search.'
+            });
+        </script>
+    </section>
+}
+
+<section>
+    <h2>Accept someone else</h2>
+    <p>
+        You can accept someone who did not apply yet or did apply but did not finalize their application yet.
+        They will receive an email asking them to confirm, as if they had applied, finalized their application, and gotten accepted with the button above.
+    </p>
+    <form action="/Admin/Acceptance/AcceptSpecific">
+        <input x-label="Email address"
+               name="emailAddress"
+               required
+               type="email" />
+
+        <input x-label="Given name"
+               name="givenName"
+               required
+               type="text" />
+
+        <input x-label="Family name"
+               name="familyName"
+               type="text" />
+
+        <button>
+            Accept
+        </button>
+    </form>
+</section>
+
+@if (Model.Data.AcceptedParticipants.Count > 0)
+{
+    <section>
+        <h2>Reject participants</h2>
+        <p>
+            If necessary, you can reject already-accepted participants. Use this power wisely.
+        </p>
+        @if (Model.Config.EventLimits!.ApplicationGroupSize > 1)
+        {
+            <p>Any group members will <strong>not</strong> be affected.</p>
+        }
+        <input id="alreadyAcceptedSearch"
+               type="search"
+               placeholder="Filter by name or email address..."
+               autocomplete="off" />
+        <div id="alreadyAccepted">
+            @foreach (var participant in Model.Data.AcceptedParticipants)
+            {
+                var search = participant.FullName + " " + participant.EmailAddress;
+                <form action="/Admin/Acceptance/RejectSpecific"
+                      data-search="@search">
+                    <fieldset role="group">
+                        <p>@participant.FullName</p>
+                        <p>@participant.EmailAddress</p>
+                        <input name="emailAddress"
+                               type="hidden"
+                               value="@participant.EmailAddress" />
+                        <button onclick="confirmAction(event, 'Reject @participant.FullName?');">
+                            Reject
+                        </button>
+                    </fieldset>
+                </form>
+            }
+        </div>
+        <script>
+            setupPagination({
+                root: '#alreadyAccepted',
+                itemsSelector: 'form',
+                pageSize: 1,
+                searchSelector: '#alreadyAcceptedSearch',
+                emptyMessage: 'No accepted participants match the search.'
+            });
+        </script>
+    </section>
+}
+
+@if (Model.Config.EventStatus < EventStatus.ApplicationsClosed && Model.User.IsOwner)
+{
+    <section>
+        <h2>Close applications</h2>
+        <p>
+            Once you've accepted everyone you want, close applications and send a rejection email to everyone else:
+        </p>
+        <form action="/Admin/Acceptance/Close">
+            <button onclick="confirmAction(event, 'Are you sure you are done accepting people? THIS WILL SEND REJECTION EMAILS!');">
+                Close applications
+            </button>
+        </form>
+    </section>
+}

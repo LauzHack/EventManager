@@ -1,0 +1,33 @@
+@model OperationResult.Letter
+@{
+    ViewData["Title"] = "Letter";
+    Layout = "_BareLayout";
+
+    CultureInfo culture;
+    try
+    {
+        culture = CultureInfo.GetCultureInfo(Model.Data.CultureName);
+    }
+    catch (CultureNotFoundException)
+    {
+        // should never happen, but in theory we could have a TOCTOU problem with changing culture data
+        culture = CultureInfo.InvariantCulture;
+    }
+}
+<div>
+    @Html.Raw(Model.Data.Address.Replace("\n", "<br />"))
+    <br />
+    <p>@Model.DateTime.ToString("D", culture)</p>
+</div>
+
+<div style="margin:4em 0 1em 0; text-align: justify">
+    @Html.Raw(Markdown.ToHtml(Model.Body))
+</div>
+
+<div>
+    <p>@Model.Data.Signee</p>
+    <p><em>@Model.Data.SigneeContact</em></p>
+    <img src="/File/@Model.Data.SignatureFileId"
+         alt="@Model.Data.Signee's signature"
+         style="width: 8em" />
+</div>

@@ -1,0 +1,24 @@
+[*.cs]
+# Types that own disposable fields should be disposable... but in tests it doesn't matter, it's just noise
+dotnet_diagnostic.CA1001.severity = none
+# Unused private types, intentional in tests
+dotnet_diagnostic.CA1812.severity = none
+# Mark stateless members as static, intentional in tests
+dotnet_diagnostic.CA1822.severity = none
+# Use the memory-based overloads of Stream.Read/WriteAsync, irrelevant in tests
+dotnet_diagnostic.CA1835.severity = none
+# Use static readonly fields for arrays, irrelevant in tests
+dotnet_diagnostic.CA1861.severity = none
+# Dispose of stuff, but in tests we sometimes don't want to
+dotnet_diagnostic.CA2000.severity = none
+
+# Use a TestContext for cancellation tokens, nothing we do could really take any serious time
+dotnet_diagnostic.MSTEST0049.severity = none
+
+# String comparison stuff, irrelevant in tests
+dotnet_diagnostic.MA0002.severity = none
+# Prefer using collection abstractions, irrelevant in tests
+dotnet_diagnostic.MA0016.severity = none
+
+# https://github.com/dotnet/roslyn-analyzers/issues/7192
+dotnet_diagnostic.CA1515.severity = none

@@ -1,0 +1,55 @@
+@model PageModel<object, Admin>
+
+<section>
+    @if (Model.Config.EventStatus >= EventStatus.ApplicationsOpen)
+    {
+        <p>
+            <strong>Applications are open, if you change the name of an existing tier or remove it, all participants who already picked that tier after being accepted will have to chose a tier again!</strong>
+        </p>
+    }
+    <form action="/Admin/TravelReimbursementPolicy/Edit">
+        <input x-label="Event currency code"
+               name="policy.EventCurrencyCode"
+               required
+               type="text"
+               value="@Model.Config.TravelReimbursementPolicy?.EventCurrencyCode"
+               placeholder="e.g., CHF, EUR, PLN..." />
+
+        <input x-label="Description of the tiers"
+               name="policy.TiersDescription"
+               required
+               type="text"
+               value="@Model.Config.TravelReimbursementPolicy?.TiersDescription"
+               placeholder="e.g., 'Where do you currently live?'" />
+
+        <input x-label="Link to the details of travel reimbursement for the event"
+               name="policy.DetailsUrl"
+               required
+               type="url"
+               value="@Model.Config.TravelReimbursementPolicy?.DetailsUrl" />
+
+        <input x-label="Amount to round up to when reimbursing participants"
+               name="policy.RoundingAmount"
+               required type="number"
+               value="@Model.Config.TravelReimbursementPolicy?.RoundingAmount" />
+
+        <x-repeated-input label="Tiers"
+                          enable-drag-drop="true"
+                          existing-items="@Model.Config.TravelReimbursementPolicy?.Tiers">
+            <input name="policy.Tiers.Key"
+                   required
+                   placeholder="Name, e.g., 'Central Europe'"
+                   type="text" />
+
+            <input name="policy.Tiers.Value"
+                   required
+                   type="number"
+                   min="0"
+                   placeholder="Amount" />
+        </x-repeated-input>
+
+        <button>
+            Save
+        </button>
+    </form>
+</section>

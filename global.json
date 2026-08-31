@@ -1,0 +1,6 @@
+{
+    // Opt into the new `dotnet test`
+    "test": {
+        "runner": "Microsoft.Testing.Platform"
+    }
+}

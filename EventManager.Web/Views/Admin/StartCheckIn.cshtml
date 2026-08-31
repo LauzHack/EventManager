@@ -1,0 +1,40 @@
+@model PageModel<object, Admin>
+
+<section>
+    @if (Model.User.IsOwner)
+    {
+        <p>
+            Congrats on finishing the acceptance phase!
+        </p>
+        <p>
+            You can start check-in when your event begins.
+            After starting check-in, participants who have not checked in yet will not be able to use this system.
+            You will still be able to check in anyone even if they are not in the system.
+        </p>
+        <p>
+            After starting check-in, the challenges list will become public, if any challenges have been configured.
+        </p>
+        <p>
+            Before starting check-in, you may want to:
+        </p>
+        <ul>
+            <li>Add the staff members in helping with check-in as <a href="/Admin/Admins">admins</a>.</li>
+            <li>Look at the list of <a href="/Admin/Participants">participants</a>.</li>
+            <li>Download participants' <a href="/Admin/Backup">data</a> once everyone who could confirm has either done or failed to do so.</li>
+            <li>Send <a href="/Admin/MassEmail">emails</a> to all confirmed participants with details about the event.</li>
+            @if (Model.Config.TravelReimbursementPolicy is not null)
+            {
+                <li>Encourage participants to submit their travel expenses early, and <a href="/Admin/TravelExpenses">handle</a> as many as you can early.</li>
+            }
+        </ul>
+        <form action="/Admin/StartCheckIn/Start">
+            <button onclick="confirmAction(event, 'Are you sure you want to start check-in? This will disable participant access until they check in!')">
+                Start
+            </button>
+        </form>
+    }
+    else
+    {
+        <p>An owner can now start check-in. You do not have ownership rights.</p>
+    }
+</section>

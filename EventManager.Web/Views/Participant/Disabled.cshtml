@@ -1,0 +1,45 @@
+@model PageModel<object, Participant?>
+
+<section>
+    @if (Model.Config.EventStatus == EventStatus.Configuring)
+    {
+        <p>
+            This website is still being set up. Please come back later.
+        </p>
+    }
+    else
+    {
+        if (Model.Config.EventStatus == EventStatus.ApplicationsClosed)
+        {
+            <p>
+                Applications are closed.
+            </p>
+        }
+        else
+        {
+            <p>
+                The event has started already.
+            </p>
+        }
+
+        @if (Model.User is null)
+        {
+            <p>
+                If you have already been accepted, please log in using the link you received by email,
+                or request a new link:
+            </p>
+
+            <form action="/Participant/Disabled/LogIn">
+                <input x-label="Email address"
+                       name="emailAddress"
+                       required
+                       type="email"
+                       placeholder="e.g., alice@example.org" />
+
+                <button>
+                    Log in
+                </button>
+            </form>
+        }
+    }
+</section>

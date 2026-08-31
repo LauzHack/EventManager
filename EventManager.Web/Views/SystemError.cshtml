@@ -1,0 +1,11 @@
+@model string
+@{
+    ViewData["Title"] = "System error";
+    Layout = "_BareLayout";
+}
+<main>
+    <p>Something went wrong. Please contact the organizers. Details:</p>
+    <pre>
+@Model
+    </pre>
+</main>

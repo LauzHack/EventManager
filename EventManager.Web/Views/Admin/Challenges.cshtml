@@ -1,0 +1,123 @@
+@model PageModel<IReadOnlyCollection<ChallengesPage.ChallengeSetterAndProjects>, Admin>
+
+<section>
+    <p>
+        This is where you list the challenge setters, who can propose challenges to teams and give awards.
+        You can then obtain a link to log in that challenge setter, and forward it to whoever manages that challenge.
+    </p>
+    <p>
+        A challenge may be opt-in, i.e., teams have to explicitly select it when submitting their project,
+        or not, i.e., all teams are implicitly considered to work towards the challenge.
+    </p>
+    <p>
+        For instance, if you have an overall ranking as well as multiple sponsors who each propose a challenge,
+        you could create one "Overall" challenge setter and use it yourself for these awards,
+        as well as one opt-in challenge setter per sponsor, then give each sponsor a login link.
+    </p>
+    <p>
+        Once the event is over, the projects gallery will include awards.
+        Projects that obtained awards will be listed first, by importance of their most important award.
+        Awards are sorted first by the order of the challenge setters here, with the first being most important,
+        then by order of the awards within each challenge setter, again with the first being most important within that challenge.
+        You can drag-and-drop challenge setters to reorder them.
+    </p>
+    @if (Model.Data.Count == 0)
+    {
+        <p>
+            You will also be able to see how many projects have been submitted for each challenge on this page.
+        </p>
+    }
+    else
+    {
+        <p>
+            <strong>If you remove or rename a challenge setter, their access to the system will be revoked and their awards deleted!</strong>
+        </p>
+    }
+    @{
+        var existing = Model.Data.Select(p => new ChallengesPage.ChallengeSetterDefinition(p.ChallengeSetter.Name, p.ChallengeSetter.IsChallengeOptIn));
+    }
+    <form action="/Admin/Challenges/Edit">
+        <x-repeated-input label="Challenge setters"
+                          enable-drag-drop="true"
+                          existing-items="@existing">
+            <input placeholder="Name"
+                   name="setters.Name"
+                   required
+                   type="text" />
+
+            <input x-label="Opt-in challenge"
+                   name="setters.IsChallengeOptIn"
+                   type="checkbox" />
+        </x-repeated-input>
+
+        <button>
+            Save
+        </button>
+    </form>
+</section>
+
+@if (Model.Data.Count > 0)
+{
+    <section>
+        <h2>Login links</h2>
+        <p>
+            Copy login links for challenge setters here.
+        </p>
+
+        <script>
+                async function setClipboardLink(relativeLink, btn) {
+                    const fullLink = window.location.origin + relativeLink;
+                    const clipboardItemData = { ["text/plain"]: fullLink };
+                    const clipboardItem = new ClipboardItem(clipboardItemData);
+                    await navigator.clipboard.write([clipboardItem]);
+                    btn.textContent = "Copied!";
+                }
+        </script>
+        @foreach (var setterAndProjects in Model.Data)
+        {
+            var linkOp = Authenticator.AddAuthentication(Model.Config.AuthenticationSecret!, Operation.CreatePageView<ChallengeSetter>(), setterAndProjects.ChallengeSetter.Name);
+            var link = JsonSerializer.Serialize(linkOp.RelativeUri.ToString());
+            <fieldset role="group">
+                <p>@setterAndProjects.ChallengeSetter.Name</p>
+                <button onclick="setClipboardLink(@link, this)">Copy login link</button>
+            </fieldset>
+        }
+    </section>
+
+    <section>
+        <h2>Projects per challenge</h2>
+        <p>
+            These are the projects that have been submitted for each challenge, with awards in parentheses.
+        </p>
+        <p>
+            Percentages may sum up to more than 100% since projects can participate in more than one challenge.
+        </p>
+        @if (Model.Config.EventStatus < EventStatus.Finished)
+        {
+            <p>
+                <em>Awards are not public yet as the event has not finished!</em>
+            </p>
+        }
+        @foreach (var setterAndProjects in Model.Data)
+        {
+            var percent = setterAndProjects.Projects.Count * 100 / Model.Data.Count;
+            <p>
+                <strong>@setterAndProjects.ChallengeSetter.Name</strong>: @setterAndProjects.Projects.Count (@percent%)
+            </p>
+            <ul>
+                @foreach (var projectAndAwards in setterAndProjects.Projects)
+                {
+                    <li>
+                        <p>
+                            @projectAndAwards.Key.Title
+                            @if (projectAndAwards.Value.Count > 0)
+                            {
+                                <strong>(@string.Join(", ", projectAndAwards.Value)</strong>
+                            }
+                        </p>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+}

@@ -1,0 +1,190 @@
+@model PageModel<GroupPage.Model, Participant>
+
+@if (Model.Config.EventLimits!.ApplicationGroupSize <= 1)
+{
+    <section>
+        <p>
+            Please double-check your application details below, make any necessary modifications, then finalize your application.
+        </p>
+        <form action="/Participant/Group/Finalize">
+            <button>
+                Finalize my application
+            </button>
+        </form>
+    </section>
+    return;
+}
+
+@{
+    // From a UI point of view, "no group" == "group with just the participant"
+    var group = Model.Data.Group;
+    if (group is null)
+    {
+        group = new("fake") { Members = { Model.User } };
+    }
+
+    var isAlone = group.Members.Count == 1;
+    var canInvite = group.Members.Count + group.InvitedParticipants.Count < Model.Config.EventLimits!.ApplicationGroupSize;
+}
+
+<section>
+    <p>
+        Groups are accepted as a whole: if anyone in the group is accepted, the entire group is.
+    </p>
+    @if (isAlone)
+    {
+        <p>You are currently applying alone.</p>
+    }
+    @if (!canInvite)
+    {
+        <p>You cannot invite any more people in your group as it already has enough members/invitations.</p>
+    }
+</section>
+
+@if (!isAlone)
+{
+    <section>
+        <h2>Your group</h2>
+        <p>
+            Besides you, your application group currently contains:
+        </p>
+        @foreach (var member in group.Members.Where(m => m.EmailAddress != Model.User.EmailAddress).OrderByName())
+        {
+            <form action="/Participant/Group/RemoveMember">
+                <fieldset role="group">
+                    <p>@member.FullName</p>
+
+                    <input name="emailAddress"
+                           type="hidden"
+                           value="@member.EmailAddress" />
+
+                    <button onclick="confirmAction(event, 'Are you sure you want to remove @member.FullName from your group?');">
+                        Remove
+                    </button>
+                </fieldset>
+            </form>
+        }
+    </section>
+}
+
+@if (group.InvitedParticipants.Count > 0)
+{
+    <section>
+        <h2>Your group's invitations</h2>
+        <p>
+            Your group has invited the following people:
+        </p>
+        @foreach (var invited in group.InvitedParticipants)
+        {
+            <form action="/Participant/Group/CancelInvitation">
+                <fieldset role="group">
+                    <p>@(invited.FullName ?? invited.EmailAddress)</p>
+
+                    <input name="emailAddress"
+                           type="hidden"
+                           value="@invited.EmailAddress" />
+
+                    <button onclick="confirmAction(event, 'Are you sure you want to cancel the invitation for @invited.EmailAddress?');">
+                        Cancel
+                    </button>
+                </fieldset>
+            </form>
+        }
+        <p>Once they have accepted, come back to this page using the login link you received by email and finalize your application.</p>
+    </section>
+}
+
+@if (canInvite)
+{
+    <section>
+        <h2>Invite others</h2>
+        <p>
+            Invite someone to apply with you:
+        </p>
+        <form action="/Participant/Group/CreateInvitation">
+            <fieldset role="group">
+                <input name="emailAddress"
+                       required
+                       type="email"
+                       placeholder="e.g., alice@example.org" />
+
+                <button>
+                    Invite
+                </button>
+            </fieldset>
+        </form>
+    </section>
+}
+
+@if (Model.Data.InvitedGroups.Count > 0)
+{
+    <section>
+        <h2>Invitations for you</h2>
+        <p>
+            You have been invited to apply with other people!
+        </p>
+        @foreach (var invitedGroup in Model.Data.InvitedGroups)
+        {
+            var names = string.Join(", ", invitedGroup.Members.Select(m => m.FullName));
+            var id = Guid.NewGuid().ToString();
+
+            <fieldset role="group">
+                <p>@names</p>
+
+                <button form="accept-@id">
+                    Join
+                </button>
+
+                <button form="reject-@id"
+                        role="link"
+                        onclick="confirmAction(event, 'Are you sure you want to REJECT the invitation from the group of @(names)?');">
+                    Reject
+                </button>
+
+                <form id="accept-@id"
+                      action="/Participant/Group/AcceptInvitation">
+                    <input name="id"
+                           type="hidden"
+                           value="@invitedGroup.Id" />
+                </form>
+
+                <form id="reject-@id"
+                      action="/Participant/Group/RejectInvitation">
+                    <input name="id"
+                           type="hidden"
+                           value="@invitedGroup.Id" />
+                </form>
+            </fieldset>
+        }
+    </section>
+}
+
+<section>
+    @if (group.InvitedParticipants.Count == 0 && Model.Data.InvitedGroups.Count == 0)
+    {
+        <form action="/Participant/Group/Finalize">
+            <button>
+                @if (group.Members.Count == 1)
+                {
+                    @:Finalize my application <strong>alone</strong>
+                }
+                else
+                {
+                    @:Finalize my group's application (<strong>@string.Join(", ", group.Members.OrderByName().Select(m => m.FullName))</strong>)
+                }
+            </button>
+        </form>
+    }
+    else
+    {
+        <button disabled>
+            Cannot finalize yet, there are pending invitations
+        </button>
+    }
+</section>
+
+<section>
+    <form action="/Participant/Group/Withdraw">
+        <em>If you do not want to apply anymore, you can also <button role="link">withdraw</button>.</em>
+    </form>
+</section>

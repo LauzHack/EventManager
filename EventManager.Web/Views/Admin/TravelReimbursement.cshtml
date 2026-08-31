@@ -1,0 +1,128 @@
+@model PageModel<IReadOnlyCollection<TravelReimbursementPage.ParticipantReimbursement>, Admin>
+
+@{
+    var hasDemos = Model.Config.EventLimits!.ProjectTeamSize > 0;
+}
+
+@if (Model.Data.Count == 0)
+{
+    <section>
+        <p>
+            There are no participants to be reimbursed yet.
+        </p>
+    </section>
+    return;
+}
+
+<style>
+    .onlyprint {
+        display: none;
+    }
+</style>
+<style media="print">
+    /* Repeat table headers on each page when printed */
+    thead {
+        display: table-header-group;
+    }
+
+    .onlyprint {
+        display: initial !important;
+    }
+
+    .noprint, body > nav, main > footer {
+        display: none;
+    }
+</style>
+
+<section class="noprint">
+    <p>
+        Print this page if you want to have participants sign when being reimbursed.
+    </p>
+    @if (hasDemos)
+    {
+        <p>
+            View this page while reimbursing to check that participants have demoed. Don't forget to refresh the page!
+        </p>
+    }
+    <p>
+        Total reimbursement amount: <strong>@Model.Config.TravelReimbursementPolicy!.EventCurrencyCode @Model.Data.Sum(r => r.Amount)</strong>
+    </p>
+
+    <script src="~/pagination.js"></script>
+    <input id="search"
+           type="search"
+           placeholder="Search by name..."
+           autocomplete="off" />
+    <table>
+        @foreach (var reimbursement in Model.Data)
+        {
+            <tr data-search="@reimbursement.FullName">
+                <td>
+                    <p>
+                        <strong>@(reimbursement.FullName ?? "???")</strong>
+                    </p>
+                    <p>
+                        <small>@reimbursement.EmailAddress</small>
+                    </p>
+                </td>
+                @if (hasDemos)
+                {
+                    <td>
+                        @if (reimbursement.HasDemoed)
+                        {
+                            <strong>Demoed</strong>
+                        }
+                        else
+                        {
+                            <small>Not demoed yet</small>
+                        }
+                    </td>
+                }
+                <td>
+                    <p>
+                        <strong>@Model.Config.TravelReimbursementPolicy!.EventCurrencyCode @reimbursement.Amount</strong>
+                    </p>
+                    <p>
+                        <small>Cap: @(reimbursement.Cap is null ? "???" : reimbursement.Cap)</small>
+                    </p>
+                </td>
+                <td>@(reimbursement.Remarks ?? "")</td>
+            </tr>
+        }
+    </table>
+    <script>
+            setupPagination({
+                root: 'table',
+                itemsSelector: 'tr',
+                pageSize: 10,
+                searchSelector: '#search',
+                emptyMessage: 'No participants to be reimbursed match the search.'
+            });
+    </script>
+</section>
+
+<section class="onlyprint">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email address</th>
+                <th>Amount</th>
+                <th>Cap</th>
+                <th>Signature</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var reimbursement in Model.Data)
+            {
+                <tr>
+                    <td>@(reimbursement.FullName ?? "???")</td>
+                    <td style="word-break: break-all"><small>@reimbursement.EmailAddress</small></td>
+                    <td><strong>@(reimbursement.Amount)</strong></td>
+                    <td>@(reimbursement.Cap is null ? "???" : reimbursement.Cap)</td>
+                    <td style="width: 20em"></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>

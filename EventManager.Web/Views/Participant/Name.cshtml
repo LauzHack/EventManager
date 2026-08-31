@@ -1,0 +1,24 @@
+@model PageModel<object, Participant>
+
+<section>
+    <form action="/Participant/Name/Edit">
+        <input x-label="Given name"
+               name="givenName"
+               required
+               type="text"
+               placeholder="e.g., Margaret"
+               value="@Model.User.GivenName" />
+
+        <input x-label="Family name"
+               x-label-details="Enter '@NamePage.EmptyFamilyNamePlaceholder' if you have no family name"
+               name="familyName"
+               required
+               type="text"
+               placeholder="e.g., Hamilton"
+               value="@(Model.User.GivenName is null ? null : (Model.User.FamilyName ?? NamePage.EmptyFamilyNamePlaceholder))" />
+
+        <button>
+            @(Model.User.GivenName is null ? "Continue" : "Save")
+        </button>
+    </form>
+</section>

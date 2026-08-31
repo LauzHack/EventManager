@@ -1,0 +1,31 @@
+@model PageModel<object, ChallengeSetter>
+
+<section>
+    <p>
+        Describe the <strong>@Model.User.Name</strong> challenge.
+    </p>
+    <p>
+        Let participants know what the goal is, where they can find resources such as data or code you provide, and what restrictions you enforce if any.
+    </p>
+    <form action="/ChallengeSetter/Description/Edit">
+        <textarea x-label-can-use-markdown="true"
+                  style="min-height: 33vh"
+                  name="description"
+                  required
+                  maxlength="@ChallengeSetter.MaxDescriptionLength">@Model.User.Description</textarea>
+
+        <button>
+            Save
+        </button>
+    </form>
+</section>
+
+@if (Model.User.Description is string description)
+{
+    <section>
+        <details>
+            <summary>Preview (click to expand)</summary>
+            @Html.Raw(Markdown.ToHtml(description))
+        </details>
+    </section>
+}

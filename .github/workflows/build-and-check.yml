@@ -1,0 +1,43 @@
+name: build and check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.x"
+
+      - name: Install dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration 'Release' --no-restore
+
+      - name: Check formatting
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Test
+        run: dotnet test --results-directory 'TestResults' --coverage --coverage-output 'Coverage.xml' --coverage-output-format 'cobertura' --no-restore
+
+      - name: Check line coverage
+        run: |
+          if grep 'name="EventManager' 'TestResults/Coverage.xml' | grep -Fv 'EventManager.Tests' | grep -Fv 'EventManager.Web' | grep -v 'line-rate="1"'; then
+            exit 1
+          fi
+      - name: Check branch coverage
+        run: |
+          if grep 'name="EventManager' 'TestResults/Coverage.xml' | grep -Fv 'EventManager.Tests' | grep -Fv 'EventManager.Web' | grep -v 'branch-rate="1"'; then
+            exit 1
+          fi

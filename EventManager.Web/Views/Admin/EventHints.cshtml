@@ -1,0 +1,72 @@
+@model PageModel
+
+<section>
+    <p>
+        Set some hints for participants here, so they have a better idea of what to do.
+        Or leave the defaults, which come from experience organizing events.
+    </p>
+</section>
+
+<form action="/Admin/EventHints/Edit">
+    <section>
+        <h2>Application</h2>
+        <p>
+            These will be displayed when participants apply, in addition to the standard ones around filling their profile, finalizing, and so on.
+        </p>
+        <x-repeated-input label="Hints"
+                          stack-vertically="true"
+                          enable-drag-drop="true"
+                          existing-items="@Model.Config.EventHints.ApplicationHints">
+            <input x-label="Emoji"
+                   name="hints.ApplicationHints.Emoji"
+                   required
+                   type="text" />
+            <input x-label="First line"
+                   x-label-can-use-markdown="true"
+                   name="hints.ApplicationHints.FirstLine"
+                   required
+                   type="text" />
+            <input x-label="Second line"
+                   x-label-can-use-markdown="true"
+                   name="hints.ApplicationHints.SecondLine"
+                   required
+                   type="text" />
+        </x-repeated-input>
+    </section>
+
+    <section style="@(Model.Config.EventLimits!.ProjectTeamSize > 0 ? "" : "display: none")">
+        <h2>Project presentation</h2>
+
+        <input x-label="Header for presentation hints"
+               name="hints.PresentationHintsHeader"
+               required
+               type="text"
+               value="@Model.Config.EventHints.PresentationHintsHeader" />
+
+        <x-repeated-input label="Hints"
+                          stack-vertically="true"
+                          enable-drag-drop="true"
+                          existing-items="@Model.Config.EventHints.PresentationHints">
+            <input x-label="Emoji"
+                   name="hints.PresentationHints.Emoji"
+                   required
+                   type="text" />
+            <input x-label="First line"
+                   x-label-can-use-markdown="true"
+                   name="hints.PresentationHints.FirstLine"
+                   required
+                   type="text" />
+            <input x-label="Second line"
+                   x-label-can-use-markdown="true"
+                   name="hints.PresentationHints.SecondLine"
+                   required
+                   type="text" />
+        </x-repeated-input>
+    </section>
+
+    <section>
+        <button>
+            Save
+        </button>
+    </section>
+</form>

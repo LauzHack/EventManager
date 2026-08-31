@@ -1,0 +1,93 @@
+@model PageModel<object, Admin?>
+
+<section>
+    <p>
+        Welcome! Configure the main admin account and the email provider here.
+    </p>
+    @if (Model.User is null)
+    {
+        <p>
+            You can also import a backup below.
+        </p>
+    }
+    <form action="/Admin/EmailSetup/Edit">
+        <input x-label="Email address of the admin"
+               name="adminEmailAddress"
+               required
+               type="email"
+               value="@Model.User?.EmailAddress" />
+
+        <input x-label="URL of the email service"
+               name="settings.Uri"
+               required
+               type="url"
+               placeholder="e.g., smtp://example.org:587"
+               value="@Model.Config.EmailSenderSettings?.Uri" />
+
+        <input x-label="Username for the email service"
+               name="settings.UserName"
+               required
+               type="text"
+               value="@Model.Config.EmailSenderSettings?.UserName" />
+
+        <input x-label="Password for the email service"
+               name="settings.Password"
+               required
+               type="text"
+               value="@Model.Config.EmailSenderSettings?.Password" />
+
+        <input x-label="Name of the email sender"
+               name="settings.SenderName"
+               required
+               type="text"
+               placeholder="e.g., your organization's name"
+               value="@Model.Config.EmailSenderSettings?.SenderName" />
+
+        <input x-label="Email address of the email sender"
+               name="settings.SenderAddress"
+               required
+               type="email"
+               placeholder="if possible, an address you've verified with the email service"
+               value="@Model.Config.EmailSenderSettings?.SenderAddress" />
+
+        <input x-label='"Reply to" email address'
+               name="settings.ReplyToAddress"
+               required
+               type="email"
+               placeholder="e.g., your public contact email address"
+               value="@Model.Config.EmailSenderSettings?.ReplyToAddress" />
+
+        <button x-require-javascript="true">
+            Save
+        </button>
+    </form>
+</section>
+
+@if (Model.User is null)
+{
+    <section>
+        <h2>Import backup</h2>
+        <p>
+            To restore the system from a backup, please enter your admin email address and upload the backup file.
+            It's OK if the email address is different from admins that existed in the backup.
+            You will then receive a login link by email.
+        </p>
+        <form action="/Admin/EmailSetup/ImportBackup">
+            <input x-label="Email address of the admin to use"
+                   name="adminEmailAddress"
+                   required
+                   type="email" />
+
+            <input x-label="Backup file"
+                   name="backup"
+                   required
+                   type="file"
+                   x-max-file-size="int.MaxValue"
+                   accept="@Backup.FileExtension" />
+
+            <button x-require-javascript="true">
+                Import
+            </button>
+        </form>
+    </section>
+}

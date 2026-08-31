@@ -1,0 +1,204 @@
+@model PageModel<IReadOnlyCollection<TravelExpense>, Participant>
+
+@if (Model.Config.EventStatus < EventStatus.CheckInStarted)
+{
+    <section>
+        <p>We're looking forward to seeing you at @Model.Config.EventDetails!</p>
+
+        @if (Model.Config.EventLimits!.ApplicationGroupSize > 1)
+        {
+            <p>
+                <strong>Changing your application group is no longer possible.</strong>
+                If someone else would like to come to the event with you, they should apply separately.
+                This also applies if you applied with someone and they would like to be replaced by someone else, for fairness reasons.
+                @if (Model.Config.EventLimits!.ProjectTeamSize > 1)
+                {
+                    @:You can form any team you want at the event, regardless of who you applied with.
+                }
+            </p>
+        }
+
+        @if (Model.Config.VisaInvitationFormat is not null)
+        {
+            <p>Need a <strong>visa</strong> to get to the event? Request a visa invitation letter <a href="/Participant/VisaInvitationLetter">here</a>.</p>
+        }
+    </section>
+}
+
+@if (Model.Config.TravelReimbursementPolicy is not null)
+{
+    <section>
+        <p>
+            You can now declare your travel expenses.
+        </p>
+        @if (Model.User.TravelReimbursementTier is not null)
+        {
+            <p>
+                Your chosen travel reimbursement tier is <strong>@Model.User.TravelReimbursementTier</strong>.
+            </p>
+        }
+        else
+        {
+            <h2>Travel reimbursement tier</h2>
+        }
+        <form x-minimize="@(Model.User.TravelReimbursementTier is not null)"
+              x-minimize-description="your tier"
+              action="/Participant/Travel/ChooseTravelReimbursementTier">
+            <p>
+                Details <a href="@Model.Config.TravelReimbursementPolicy.DetailsUrl" target="_blank">here</a>.
+            </p>
+            <fieldset>
+                <legend>
+                    Pick the tier that applies to you.
+                </legend>
+                @foreach (var tier in Model.Config.TravelReimbursementPolicy.Tiers.OrderBy(p => p.Value))
+                {
+                    <input x-label="@tier.Key (@Model.Config.TravelReimbursementPolicy.EventCurrencyCode @tier.Value)"
+                           name="tier"
+                           required
+                           type="radio"
+                           value="@tier.Key"
+                           checked="@(Model.User.TravelReimbursementTier == tier.Key ? "checked" : null)" />
+                }
+            </fieldset>
+
+            <button>
+                @(Model.User.TravelReimbursementTier is null ? "Continue" : "Save")
+            </button>
+        </form>
+    </section>
+
+    if (Model.User.TravelReimbursementTier is not null)
+    {
+        <section>
+            <h2>Submit a travel expense</h2>
+
+            <p>
+                <strong>Please submit each expense on its own</strong>, you can submit as many expenses as needed.
+                Do not combine multiple expenses into a single file.
+            </p>
+            <p>
+                <strong>Do not submit bank statements as receipts</strong>, they do not contain enough information.
+                Instead, provide something that contains as much information as possible. It's OK if it's a screenshot or photograph.
+            </p>
+
+            <form action="/Participant/Travel/SubmitTravelExpense">
+                <input x-label="Description"
+                       name="description"
+                       required
+                       type="text"
+                       maxlength="@TravelExpense.MaxDescriptionLength"
+                       placeholder="e.g., 'Train ticket'" />
+
+                <input x-label="Amount"
+                       name="amount"
+                       required
+                       type="number"
+                       step="0.01"
+                       min="1" />
+
+                <input x-label="Currency code"
+                       name="currencyCode"
+                       required
+                       type="text"
+                       placeholder="e.g., CHF, EUR, PLN..." />
+
+                <input x-label="This expense should count double as there will be a future expense for the same amount, e.g., a train ticket back"
+                       name="countsDouble"
+                       type="checkbox" />
+
+                <x-repeated-input label="Is this expense shared with anyone else? (<em>if so, only one person should submit it</em>)"
+                                  stack-vertically="true">
+                    <input name="ownerEmailAddresses"
+                           placeholder="Email address the person used to apply to the event"
+                           required
+                           type="email" />
+                </x-repeated-input>
+
+                <input x-label=" Receipt <em>(not a bank statement!)</em>"
+                       name="receipt"
+                       required
+                       type="file"
+                       accept="image/*,application/pdf"
+                       x-max-file-size="@File.MaxSizeInBytes" />
+
+                <button>
+                    Submit
+                </button>
+            </form>
+        </section>
+
+        @if (Model.Data.Count > 0)
+        {
+            <section>
+                <h2>Your travel expenses</h2>
+                @foreach (var expense in Model.Data)
+                {
+                    <details>
+                        @if (expense.Status is TravelExpenseStatus.Reimbursed)
+                        {
+                            <summary>Reimbursed: @expense.Description</summary>
+                        }
+                        else if (expense.Status is TravelExpenseStatus.Approved)
+                        {
+                            <summary>Approved: @expense.Description</summary>
+                        }
+                        else
+                        {
+                            <summary>Pending approval: @expense.Description</summary>
+                        }
+                        <p><strong>@expense.CurrencyCode @expense.Amount</strong></p>
+                        @if (expense.Owners.Count > 1)
+                        {
+                            <p>Shared with @string.Join(", ", expense.Owners.Where(o => !o.EmailAddress.Equals(Model.User.EmailAddress, StringComparison.OrdinalIgnoreCase)).Select(o => o.FullName)).</p>
+                        }
+                        @if (expense.CountsDouble)
+                        {
+                            <p>Should count double.</p>
+                        }
+                        <p>
+                            <a href="/File/@expense.ReceiptId" download>View receipt</a>
+                        </p>
+                        @if (expense.Status is not TravelExpenseStatus.Reimbursed)
+                        {
+                            <form action="/Participant/Travel/CancelTravelExpense">
+                                <input name="receiptId"
+                                       type="hidden"
+                                       value="@expense.ReceiptId" />
+
+                                <button onclick="confirmAction(event, 'Are you sure you want to cancel the expense @expense.Description?');">
+                                    Cancel @expense.Description
+                                </button>
+                            </form>
+                        }
+                    </details>
+                }
+            </section>
+        }
+    }
+
+    if (Model.User.Status == ParticipantStatus.CheckedIn)
+    {
+        <section>
+            <h2>Continue</h2>
+            <p>
+                Once you've declared your travel expenses if necessary, you can continue to project submission.
+                You can still declare expenses later.
+            </p>
+            <form action="/Participant/Travel/FinishDeclaringTravelExpenses">
+                <button>
+                    Continue
+                </button>
+            </form>
+        </section>
+    }
+}
+
+@if (Model.Config.EventStatus < EventStatus.CheckInStarted)
+{
+    <section>
+        <form action="/Participant/Travel/Withdraw">
+            <em>If you can no longer make it, you can <button role="link">withdraw</button>.</em>
+        </form>
+    </section>
+}

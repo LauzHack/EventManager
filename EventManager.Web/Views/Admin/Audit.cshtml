@@ -1,0 +1,92 @@
+@model PageModel<IReadOnlyCollection<AuditMessage>, Admin>
+
+@* Custom background colors for these rows, errors are fine because it's users screwing up, but fatal is very bad (from Pico.CSS's colors) *@
+<style>
+    .error td { background: #FAEEEB; border-top: 1px solid #F8DCD6; border-bottom: 1px solid #F8DCD6; }
+    .fatal td { background: #D93526; border-top: 1px solid #C52F21; border-bottom: 1px solid #C52F21; }
+</style>
+
+<section>
+    @if (Model.Data.Count == 0)
+    {
+        <p>The audit log is empty.</p>
+    }
+    else
+    {
+        var timeZone = TimeZoneInfo.TryFindSystemTimeZoneById(Model.Config.EventDetails!.TimeZone, out var parsedTimeZone)
+                     ? parsedTimeZone
+                     // should never happen, we validated the timezone
+                     : TimeZoneInfo.Utc;
+        <p>
+            <em>Dates are shown in the event's time zone (@timeZone.DisplayName).</em>
+        </p>
+        <script src="~/pagination.js"></script>
+        <input id="search"
+               type="search"
+               placeholder="Filter by source, user, or text..."
+               autocomplete="off" />
+        <fieldset role="group">
+            <legend>Status</legend>
+            <input x-label="Info"
+                   type="checkbox"
+                   role="switch"
+                   class="audit-status"
+                   value="info"
+                   checked />
+            <input x-label="User errors"
+                   type="checkbox"
+                   role="switch"
+                   class="audit-status"
+                   value="error"
+                   checked />
+            <input x-label="System errors"
+                   type="checkbox"
+                   role="switch"
+                   class="audit-status"
+                   value="fatal"
+                   checked />
+        </fieldset>
+        <table>
+            @foreach (var message in Model.Data.Reverse())
+            {
+                var cls = message.Status switch
+                {
+                    Status.SystemError => "fatal",
+                    Status.UserError => "error",
+                    _ => "info",
+                };
+                var dateText = message.DateTime.ToOffset(timeZone.GetUtcOffset(message.DateTime)).ToString("G");
+                var search = dateText + " " + (message.Source ?? "") + " " + (message.EmailAddress ?? "") + " " + message.Text;
+                <tr class="@cls" data-search="@search">
+                    <td>
+                        <p>@dateText</p>
+                        <p><small>@message.Source</small></p>
+                    </td>
+                    <td>
+                        @message.EmailAddress
+                    </td>
+                    <td>
+                        @Html.Raw(Markdown.ToHtml(message.Text))
+                    </td>
+                </tr>
+            }
+        </table>
+        <script>
+            var statusBoxes = [...document.querySelectorAll('.audit-status')];
+            var recompute = setupPagination({
+                root: 'table',
+                itemsSelector: 'tbody tr',
+                pageSize: 50,
+                searchSelector: '#search',
+                emptyMessage: 'No audit messages match the filter.',
+                extraFilter: item => {
+                    var allowed = statusBoxes.filter(b => b.checked).map(b => b.value);
+                    return allowed.includes(item.className);
+                },
+            });
+            for (var box of statusBoxes) {
+                box.addEventListener('change', recompute);
+            }
+        </script>
+    }
+</section>

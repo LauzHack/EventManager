@@ -1,0 +1,32 @@
+@model PageModel<object, Participant>
+
+<section>
+    @if (Model.User.Status is ParticipantStatus.Finalized)
+    {
+        <p>
+            Please wait for the organizers to make a decision.
+            You will receive updates by email.
+        </p>
+        <form action="/Participant/WaitForAcceptance/Unfinalize">
+            If you want to modify your application, you can <button role="link" onclick="confirmAction(event, 'Are you sure you want to un-finalize your application?');">un-finalize it</button>.
+            @(Model.Config.EventLimits!.ApplicationGroupSize > 1 ? "You can change your application group that way." : "")
+        </form>
+    }
+    else
+    {
+        <p>
+            You have been accepted! Please confirm you will attend the event.
+        </p>
+        <form action="/Participant/WaitForAcceptance/Confirm">
+            <button>
+                Confirm
+            </button>
+        </form>
+    }
+</section>
+
+<section>
+    <form action="/Participant/WaitForAcceptance/Withdraw">
+        <em>If you do not want to apply anymore, you can also <button role="link" onclick="confirmAction(event, 'Are you sure you want to withdraw your application?');">withdraw</button>.</em>
+    </form>
+</section>

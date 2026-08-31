@@ -1,0 +1,148 @@
+@model PageModel<object, Participant>
+
+<form action="/Participant/Profile/Edit">
+    @foreach (var choice in Model.Config.ProfileForm!.Choices)
+    {
+        var participantChoice = Model.User.Profile.TryGetValue(choice.Name, out var chosen) ? chosen : null;
+
+        <section>
+            <h4>@choice.Name</h4>
+            @if (choice.AllowsCustomOption)
+            {
+                if (choice.Options.Length > 0)
+                {
+                    // Custom options + known options => radios + textbox
+                    var isStandardChoice = participantChoice is null || choice.Options.Contains(participantChoice);
+                    <fieldset>
+                        <legend>
+                            @Html.Raw(Markdown.ToHtml(choice.Description))
+                        </legend>
+
+                        @foreach (var option in choice.Options)
+                        {
+                            <input x-label="@option"
+                                   name="@choice.Name"
+                                   required="@(choice.IsRequired ? "required" : null)"
+                                   type="radio"
+                                   value="@option"
+                                   checked="@(participantChoice == option ? "checked" : null)" />
+                        }
+
+                        <fieldset role="group">
+                            <input id="@choice.Name-fake"
+                                   type="radio"
+                                   checked="@(isStandardChoice ? null : "checked")" />
+                            <p>Other:</p>
+                            <input x-suggestions="@choice.CustomOptionSuggestions"
+                                   id="@choice.Name-other" name="@choice.Name"
+                                   type="text"
+                                   value="@(isStandardChoice ? null : participantChoice)"
+                                   maxlength="@ProfileFormChoice.MaxCustomOptionLength"
+                                   placeholder="Custom choice@(choice.CustomOptionSuggestions is [] ? "" : ", or pick among suggestions")" />
+                        </fieldset>
+                    </fieldset>
+                    <script>
+                                (function() {
+                                    var all = document.getElementsByName("@choice.Name");
+                                    var fake = document.getElementById("@choice.Name-fake");
+                                    var box = document.getElementById("@choice.Name-other");
+
+                                    for (var n = 0; n < all.length - 1; n++) {
+                                        all[n].addEventListener('change', _ => {
+                                            fake.checked = false;
+                                            box.value = '';
+                                            box.required = null;
+                                        });
+                                    }
+
+                                    function handleOther() {
+                                        box.required = @Html.Raw(choice.IsRequired ? "'required'" : "null");
+                                        for (var n = 0; n < all.length - 1; n++) {
+                                            all[n].checked = false;
+                                            all[n].required = null;
+                                        }
+                                        fake.checked = true;
+                                    }
+                                    fake.addEventListener('change', _ => handleOther());
+                                    box.addEventListener('input', _ => handleOther());
+                                })();
+                    </script>
+                }
+                else
+                {
+                    // Custom options only => textbox
+                    // (with an "Optional: " label to discourage writing "no", "-", "nothing", etc.)
+                    <input x-label="@Markdown.ToHtml(" Optional: " + choice.Description)"
+                           x-suggestions="@choice.CustomOptionSuggestions"
+                           name="@choice.Name"
+                           required="@(choice.IsRequired ? "required" : null)"
+                           type="text"
+                           maxlength="@ProfileFormChoice.MaxCustomOptionLength"
+                           value="@participantChoice" />
+                }
+            }
+            else if (choice.Options is [var single])
+            {
+                // Single choice => checkbox
+                @Html.Raw(Markdown.ToHtml(choice.Description))
+                <input x-label="@single"
+                       name="@choice.Name"
+                       required="@(choice.IsRequired ? "required" : null)"
+                       type="checkbox"
+                       value="@single"
+                       checked="@(participantChoice is null ? null : "checked")" />
+            }
+            else
+            {
+                // Multiple choices => select
+                <select x-label="@Markdown.ToHtml(choice.Description)"
+                        name="@choice.Name"
+                        required="@(choice.IsRequired ? "required" : null)">
+                    @foreach (var option in choice.Options)
+                    {
+                        <option value="@option" selected="@(participantChoice == option ? "selected" : null)">@option</option>
+                    }
+                </select>
+            }
+        </section>
+    }
+
+    @foreach (var file in Model.Config.ProfileForm!.Files)
+    {
+        var participantFile = Model.User.Profile.TryGetValue(file.Name, out var chosen) ? chosen : null;
+
+        <section>
+            <h4>@file.Name</h4>
+            <input x-label="@Markdown.ToHtml(file.Description)"
+                   x-max-file-size="@File.MaxSizeInBytes"
+                   x-existing-file-id="@participantFile"
+                   x-existing-file-removal-input-name="@(ProfilePage.FileRemovalPrefix + file.Name)"
+                   name="@file.Name"
+                   required="@(file.IsRequired ? "required" : null)"
+                   type="file"
+                   accept="@(file.AllowedExtensions is [] ? null : string.Join(',', file.AllowedExtensions))" />
+        </section>
+    }
+
+    <section>
+        @if (Model.Config.EventLimits!.ApplicationGroupSize > 1)
+        {
+            <p>
+                You will have the opportunity to apply with friends as a group in the next step.
+            </p>
+        }
+
+        <button>
+            @(Model.User.Status < ParticipantStatus.ProfileFilled ? "Continue" : "Save")
+        </button>
+    </section>
+</form>
+
+@if (Model.User.Status < ParticipantStatus.ProfileFilled)
+{
+    <section>
+        <form action="/Participant/Profile/Withdraw">
+            <em>If you do not want to apply anymore, you can also <button role="link">withdraw</button>.</em>
+        </form>
+    </section>
+}

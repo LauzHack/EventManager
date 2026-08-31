@@ -1,0 +1,98 @@
+@model PageModel<IReadOnlyCollection<Project>, ChallengeSetter>
+
+<script src="~/pagination.js"></script>
+
+<section>
+    @if (Model.Data.Count == 0)
+    {
+        <p>
+            No projects have been submitted for your challenge yet.
+            You will be able to see projects here as they are submitted, and give them awards.
+        </p>
+        return;
+    }
+
+    <p>
+        The following projects are participating in the @Model.User.Name challenge:
+    </p>
+
+    <input id="search"
+           type="search"
+           placeholder="Search by title, short description, or team member names..."
+           autocomplete="off" />
+    <table>
+        @foreach (var project in Model.Data)
+        {
+            var search = project.Title + " " + project.ShortDescription + " " + " " + project.LongDescription + string.Join(" ", project.Team.Select(m => m.FullName));
+
+            <tr data-search="@search">
+                <td>
+                    <p>
+                        <strong>@project.Title</strong>
+                    </p>
+                    <p>
+                        <small>@project.ShortDescription</small>
+                    </p>
+                </td>
+                <td>
+                    @foreach (var member in project.Team)
+                    {
+                        @* force non-breaking spaces *@
+                        <p>@member.FullName?.Replace(' ', '\u00A0')</p>
+                    }
+                </td>
+                <td>
+                    @project.LongDescription
+                </td>
+            </tr>
+        }
+    </table>
+    <script>
+            setupPagination({
+                root: 'table',
+                itemsSelector: 'tr',
+                pageSize: 10,
+                searchSelector: '#search',
+                emptyMessage: 'No projects match the search.'
+            });
+    </script>
+</section>
+
+@if (Model.Config.EventStatus >= EventStatus.JudgingStarted)
+{
+    var existing = Model.User.Awards.Select(a => new JudgingPage.AwardDefinition(a.Name, a.ProjectId)).ToArray();
+
+    <section>
+        <h2>Awards</h2>
+        <p>
+            Choose which projects should receive an award here.
+            They should be ordered most important first, you can drag-and-drop to reorder.
+        </p>
+        <p>
+            <em>Award names will be prefixed by your name</em>.
+            For instance, if you create a "1st place" award, it will appear as "@Model.User.Name 1st place" in the projects gallery once the event is over.
+        </p>
+        <form action="/ChallengeSetter/Judging/Edit">
+            <x-repeated-input label="Awards"
+                              existing-items="@existing"
+                              enable-drag-drop="true">
+                <input placeholder="Award name"
+                       name="awards.Name"
+                       required
+                       type="text" />
+
+                <select name="awards.ProjectId"
+                        required>
+                    @foreach (var project in Model.Data)
+                    {
+                        <option value="@project.Id">@project.Title</option>
+                    }
+                </select>
+            </x-repeated-input>
+
+            <button>
+                Save
+            </button>
+        </form>
+    </section>
+}

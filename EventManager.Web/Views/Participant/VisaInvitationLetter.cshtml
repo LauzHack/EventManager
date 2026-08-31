@@ -1,0 +1,50 @@
+@model PageModel<object, Participant>
+
+<section>
+    <p>
+        We're happy to provide a visa invitation letter if you need one, though we cannot guarantee it will work.
+    </p>
+    @if (Model.User.VisaInformation.PassportPhotoId is null)
+    {
+        <form action="/Participant/VisaInvitationLetter/Request">
+            <input x-label="Please upload a scan of your passport's photo page"
+                   name="passport"
+                   required
+                   type="file"
+                   accept="image/*,application/pdf"
+                   x-max-file-size="@File.MaxSizeInBytes" />
+
+            @if (Model.Config.VisaInvitationFormat!.ParticipantDetails.Length > 0)
+            {
+                <p>
+                    So we can mention them in the letter, please let us know your:
+                </p>
+                <fieldset role="group">
+                    @foreach (var label in Model.Config.VisaInvitationFormat.ParticipantDetails)
+                    {
+                        <input x-label="@label"
+                               name="details"
+                               required
+                               type="text" />
+                    }
+                </fieldset>
+            }
+
+            <button>
+                Request a visa invitation letter
+            </button>
+        </form>
+    }
+    else if (Model.User.VisaInformation.Letter is null)
+    {
+        <p>
+            Your visa invitation letter request is being processed. We'll let you know when it's handled.
+        </p>
+    }
+    else
+    {
+        <p>
+            Your visa invitation letter is available, <a href="/Letter/@Model.User.VisaInformation.Letter.Id" target="_blank">click here to view it</a>.
+        </p>
+    }
+</section>

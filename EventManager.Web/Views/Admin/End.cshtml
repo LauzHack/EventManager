@@ -1,0 +1,141 @@
+@model PageModel<IReadOnlyCollection<ChallengeSetter>, Admin>
+
+@{
+    bool hasProjects = Model.Config.EventLimits!.ProjectTeamSize > 0;
+    bool hasChallenges = Model.Data.Count > 0;
+    bool hasTravelReimbursement = Model.Config.TravelReimbursementPolicy is not null;
+}
+
+@if (!hasProjects && !hasTravelReimbursement)
+{
+    <section>
+        <p>There's nothing more to do, enjoy your event!</p>
+    </section>
+    return;
+}
+
+<section>
+    <p>
+        Now is when the event truly begins, good luck!
+    </p>
+    @if (hasProjects)
+    {
+        <p>
+            The public projects gallery is available <a href="/Projects" target="_blank">here for everyone</a>.
+            <br />
+            The private projects list@(hasChallenges ? ", including awards," : "") is available <a href="/Admin/Projects">here for admins</a>.
+        </p>
+        @if (hasChallenges)
+        {
+            <p>
+                The public challenges list is available <a href="/Challenges" target="_blank">here for everyone</a>.
+                <br />
+                @if (Model.Config.EventStatus is EventStatus.Finished)
+                {
+                    @:Since the event is finished, awards are publicly visible.
+                }
+                else
+                {
+                    @:Since the event is not yet finished, awards are not publicly visible. Only admins may see them in the private projects list.
+                }
+            </p>
+        }
+    }
+    @if (Model.User.IsOwner)
+    {
+        <form action="/Admin/End/SendLoginEmailToCheckedIn">
+            <p>
+                Since participants often lose their login email is between the confirmation time and the event, you may wish to
+                <button role="link" onclick="confirmAction(event, 'Are you sure you want to send login emails? You should only do this once per event.')">send all checked-in participants a login email</button>.
+            </p>
+        </form>
+    }
+    else
+    {
+        <p>Owners can send all checked-in participants a login email since participants often lose their original one. You do not have ownership rights.</p>
+    }
+</section>
+
+@if (hasTravelReimbursement)
+{
+    <section>
+        <h2>Travel reimbursement management</h2>
+        <p>
+            To handle travel reimbursements, first accept or reject requests in the <a href="/Admin/TravelExpenses">travel expenses page</a>.
+            You should give participants a clear deadline to submit their expenses so you have time to handle them or request changes.
+            @if (hasProjects)
+            {
+                @:Participants will anyway not be able to submit new expenses or react to rejections once judging starts.
+            }
+        </p>
+        @if (hasProjects)
+        {
+            @if (Model.Config.EventStatus < EventStatus.JudgingStarted)
+            {
+                <p>
+                    Once judging starts, you'll be able to mark teams who demoed in the projects page.
+                    This way, you can choose to only reimburse participants who demoed if you wish.
+                </p>
+            }
+            else
+            {
+                <p>
+                    Now that judging has started, mark teams who demo as "demoed" in the <a href="/Admin/Projects">projects page</a> if you want to only reimburse these people.
+                </p>
+            }
+        }
+        <p>Use the <a href="/Admin/TravelReimbursement">travel reimbursement page</a> to know how much you owe to who.</p>
+    </section>
+}
+
+@if (hasProjects)
+{
+    <section>
+        @if (Model.User.IsOwner)
+        {
+            <h2>Event phase</h2>
+            @if (Model.Config.EventStatus < EventStatus.JudgingStarted)
+            {
+                <p>
+                    Participants can submit their projects.
+                </p>
+                <p>
+                    Once it's time to judge, start the judging phase with this button:
+                </p>
+                <form action="/Admin/End/StartJudging">
+                    <button onclick="confirmAction(event, 'Are you sure you want to start judging?')">
+                        Start judging
+                    </button>
+                </form>
+            }
+            else if (Model.Config.EventStatus is EventStatus.JudgingStarted)
+            {
+                <form action="/Admin/End/CancelJudgingStart">
+                    <p>
+                        Judging has started. If this was a mistake, you can <button role="link" onclick="confirmAction(event, 'Are you sure you want to cancel opening judging?')">cancel this</button>.
+                    </p>
+                    <p>
+                        Once judging has ended, finish the event with this button:
+                    </p>
+                </form>
+                <form action="/Admin/End/EndJudging">
+                    <button onclick="confirmAction(event, 'Are you sure you want to end the event?')">
+                        Stop judging
+                    </button>
+                </form>
+            }
+            else
+            {
+                <form action="/Admin/End/CancelJudgingEnd">
+                    <p>The event has ended. If this was a mistake, you can <button role="link" onclick="confirmAction(event, 'Are you sure you want to open judging again?')">open judging again</button>.</p>
+                </form>
+            }
+        }
+        else
+        {
+            <p>
+                Owners can change the event phase. You do not have ownership rights.
+            </p>
+        }
+    </section>
+}

@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+**/*.md
+EventManager.Tests/
+
+.git
+.gitignore
+.vscode

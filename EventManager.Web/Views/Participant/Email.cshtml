@@ -1,0 +1,116 @@
+@model PageModel<object, Participant?>
+
+@{
+    var user = Model.User;
+    // Treat a non-verified email address like a missing user for simpler UX
+    if (user?.Status is ParticipantStatus.Created)
+    {
+        user = null;
+    }
+}
+
+@if (user is null)
+{
+    var choiceNames = Model.Config.ProfileForm!.FreeChoices.Select(c => (c.IsRequired ? "" : "optionally ") + c.Name.ToLowerInvariant()).Concat(
+        Model.Config.ProfileForm!.Files.Select(f => (f.IsRequired ? "" : "optionally ") + f.Name.ToLowerInvariant())
+    ).ToArray();
+    var choicesSummary = choiceNames switch
+    {
+        [] => "your email address and name",
+        [var single] => $"your email address, name and {single}",
+        [.. var rest, var last] => $"your email address, name, {string.Join(", ", rest)}, and {last}"
+    };
+
+    var hints = Model.Config.EventHints.ApplicationHints.ToBuilder();
+    hints.Add(new(
+        "📋",
+        "**Fill in** your information.",
+        $"We only need {choicesSummary}."
+    ));
+    @if (Model.Config.EventLimits!.ApplicationGroupSize > 1)
+    {
+        hints.Add(new(
+            "👥",
+            $"**Optionally form a group** of up to {Model.Config.EventLimits!.ApplicationGroupSize} people (including you).",
+            $"If one member is accepted then the entire group is."
+            + (Model.Config.EventLimits!.ProjectTeamSize > 1 ? " You can form any team during the event regardless of who you apply with." : "")
+        ));
+    }
+    hints.Add(new(
+                    "📨",
+                    "**Finalize** your application.",
+                    Model.Config.EventLimits!.ApplicationGroupSize <= 1
+                    ? "This lets us know you've double-checked your information and we should consider your application."
+                    : "This lets us know you’re done inviting group members and we should consider your application."
+                ));
+    hints.Add(new(
+        "⏳",
+        "**Wait** to be accepted or rejected.",
+        "Because there are more people who want to join than the available space allows, application does not guarantee acceptance."
+    ));
+    hints.Add(new(
+        "✅",
+        "If accepted, **confirm** your participation upon receiving an email.",
+        "You will then receive another email that confirms we are expecting you."
+    ));
+    @if (Model.Config.VisaInvitationFormat is not null)
+    {
+        hints.Add(new(
+            "🛂",
+            "If necessary, ask for a visa invitation letter.",
+            "We’re happy to write one, though we cannot guarantee you a visa, and we cannot call a consulate for you."
+        ));
+    }
+
+    <section>
+        <p>
+            Apply to @(Model.Config.EventDetails)!
+        </p>
+        <p>
+            For more information, see <a href="@Model.Config.EventDetails!.WebsiteUrl" target="_blank">the event website</a>.
+        </p>
+        @foreach (var hint in hints)
+        {
+            <div class="hint">
+                <p>@hint.Emoji</p>
+                @Html.Raw(Markdown.ToHtml(hint.FullDescription))
+            </div>
+        }
+    </section>
+}
+
+<section>
+    <form action="/Participant/Email/Edit">
+        <input x-label="Email address"
+               name="emailAddress"
+               required
+               type="email"
+               placeholder="e.g., alice@example.org"
+               value="@user?.EmailAddress" />
+
+        <input id="referrerInput"
+               name="referrer"
+               type="hidden" />
+        @* This JS global var is set in _Layout *@
+        <script>
+            document.getElementById('referrerInput').value = referrerFromUrl;
+        </script>
+
+        <button x-require-javascript="true">
+            @(user is null ? "Continue" : "Save")
+        </button>
+    </form>
+</section>
+
+@if (user is null)
+{
+    <section>
+        <p>
+            <em>If you have already applied</em>, log in using the link you received by email, or use the form above to receive the link again.
+        </p>
+        <small>
+            By applying, you accept this website's use of necessary cookies to keep you logged in.
+            This website does not use any other cookies.
+        </small>
+    </section>
+}

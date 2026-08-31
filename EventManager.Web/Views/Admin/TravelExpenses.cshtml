@@ -1,0 +1,201 @@
+@model PageModel<IReadOnlyCollection<TravelExpensesPage.ExpenseWithContext>, Admin>
+
+<section>
+    <p>
+        This page lets you approve, approve with changes, or reject individual expenses.
+        Pending expenses are listed first.
+    </p>
+    @if (!Model.Data.Any(e => e.Status is TravelExpenseStatus.Submitted))
+    {
+        <p>
+            There are currently no expenses to approve.
+        </p>
+    }
+    <p>
+        You can also create pre-approved or pre-reimbursed expenses at the end of the page.
+    </p>
+</section>
+
+@* General note: we can't put a reasonable "step" for currency exchange rates because some currencies have wild ones... *@
+
+@foreach (var expense in Model.Data)
+{
+    string StatusText(TravelExpenseStatus status) => status switch
+    {
+        TravelExpenseStatus.Reimbursed => "Reimbursed",
+        TravelExpenseStatus.Approved => "Approved",
+        _ => "Pending"
+    };
+
+    <section>
+        @if (expense.Status is not TravelExpenseStatus.Submitted)
+        {
+            @Html.Raw("<details>")
+            @Html.Raw("<summary>")
+            @:@(StatusText(expense.Status)): @expense.Description
+            @Html.Raw("</summary>")
+        }
+        else
+        {
+            <h2>Pending: @expense.Description</h2>
+        }
+
+        <p>@expense.CurrencyCode @expense.Amount <strong>@(expense.CountsDouble ? "×2" : "")</strong></p>
+
+        <p><a href="/File/@expense.ReceiptId" download>View receipt</a></p>
+
+        <p>Submitted by @string.Join(", ", expense.Owners.Select(o => $"{o.FullName ?? "<unknown>"} ({o.ReimbursementTier})"))</p>
+
+        @if (expense.OwnerExpenses.Any())
+        {
+            <p>
+                Other expenses submitted by @(expense.Owners.Count == 1 ? "this participant" : "these participants"):
+            </p>
+            <ul>
+                @foreach (var other in expense.OwnerExpenses)
+                {
+                    <li>@StatusText(other.Status): @other.Description (@other.CurrencyCode @other.Amount) @(other.CountsDouble ? "×2" : "") for @string.Join(", ", other.OwnerNames)</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>
+                @(expense.Owners.Count == 1 ? "This participant has" : "These participants have") not submitted other expenses yet.
+            </p>
+        }
+
+        @{
+            var exchangeRate = expense.CurrencyExchangeRate ?? (expense.CurrencyCode == Model.Config.TravelReimbursementPolicy!.EventCurrencyCode ? 1 : null);
+        }
+
+        <form action="/Admin/TravelExpenses/Approve">
+            <input name="receiptId"
+                   type="hidden"
+                   value="@expense.ReceiptId" />
+
+            <input x-label="Exchange rate for @expense.CurrencyCode"
+                   name="currencyExchangeRate"
+                   type="number"
+                   step="any"
+                   min="0"
+                   required
+                   value="@exchangeRate" />
+
+            <button>
+                @(expense.Status is TravelExpenseStatus.Submitted ? "Approve" : "Edit") @expense.Description
+            </button>
+        </form>
+
+        <form action="/Admin/TravelExpenses/ApproveWithChanges">
+            <input name="receiptId"
+                   type="hidden"
+                   value="@expense.ReceiptId" />
+
+            <input x-label="Amount"
+                   name="amount"
+                   type="number"
+                   step="0.01"
+                   min="1"
+                   required
+                   value="@expense.Amount" />
+
+            <input x-label="Currency code"
+                   name="currencyCode"
+                   required
+                   value="@expense.CurrencyCode" />
+
+            <input x-label="Currency exchange rate"
+                   name="exchangeRate"
+                   type="number"
+                   step="any"
+                   min="0"
+                   required
+                   value="@exchangeRate" />
+
+            <input x-label="Counts double"
+                   name="countsDouble"
+                   type="checkbox"
+                   checked="@(expense.CountsDouble ? "checked" : null)" />
+
+            <textarea x-label="Comment explaining the changes"
+                      name="comment"
+                      required></textarea>
+
+            <button>
+                Approve @expense.Description with changes
+            </button>
+        </form>
+
+        <form action="/Admin/TravelExpenses/Reject">
+            <input name="receiptId"
+                   type="hidden"
+                   value="@expense.ReceiptId" />
+
+            <textarea x-label="Rejection reason"
+                      name="reason"
+                      required></textarea>
+
+            <button>
+                Reject @expense.Description
+            </button>
+        </form>
+
+        @if (expense.Status is not TravelExpenseStatus.Submitted)
+        {
+            @Html.Raw("</details>")
+        }
+    </section>
+}
+
+<section>
+    <h2>Create an expense</h2>
+    <p>
+        You can create an expense for one or more participants.
+        This can be a prereimbursed expense participants cannot cancel, if necessary.
+        For instance, if you provide a hotel room in exchange for a lower reimbursement amount, create a prereimbursed expense for participants who get it.
+    </p>
+
+    <form action="/Admin/TravelExpenses/Create">
+        <input x-label="Receipt"
+               name="receipt"
+               required
+               type="file"
+               accept="image/*,application/pdf"
+               x-max-file-size="@File.MaxSizeInBytes" />
+
+        <input x-label="Description"
+               name="description"
+               required />
+
+        <input x-label="Amount <strong>per participant</strong>"
+               name="amount"
+               type="number"
+               step="0.01"
+               min="1"
+               required />
+
+        <input x-label="Currency code"
+               name="currencyCode"
+               required />
+
+        <input x-label="Currency exchange rate"
+               name="currencyExchangeRate"
+               type="number"
+               step="any"
+               min="0"
+               required />
+
+        <textarea x-label="Email addresses, one per line, of the participants"
+                  name="emailAddresses-all"
+                  required></textarea>
+
+        <input x-label="This expense was already reimbursed and should be deducted from participants' reimbursement amount"
+               name="alreadyReimbursed"
+               type="checkbox" />
+
+        <button>
+            Create and approve
+        </button>
+    </form>
+</section>

@@ -1,0 +1,45 @@
+@model PageModel
+
+<section>
+    <form action="/Admin/LetterData/Edit">
+        <textarea x-label="Address of the sender"
+                  name="address"
+                  required
+                  placeholder="e.g., your organization's headquarters">@Model.Config.LetterData?.Address</textarea>
+
+        <select x-label="Region for the date format"
+                name="cultureName"
+                required>
+            @foreach (var culture in CultureInfo.GetCultures(CultureTypes.AllCultures).Where(c => c != CultureInfo.InvariantCulture).OrderBy(c => c.Name))
+            {
+                <option value="@culture.Name" selected="@(Model.Config.LetterData?.CultureName == culture.Name ? "selected" : null)">@culture.Name @culture.DisplayName</option>
+            }
+        </select>
+
+        <input x-label="Signee"
+               name="signee"
+               required
+               type="text"
+               placeholder="e.g., full name of the president of your organization"
+               value="@Model.Config.LetterData?.Signee" />
+
+        <input x-label="Contact information of the signee"
+               name="contact"
+               required
+               type="text"
+               placeholder="e.g., email address and phone number"
+               value="@Model.Config.LetterData?.SigneeContact" />
+
+        <input x-label="Signature"
+               name="signature"
+               required
+               type="file"
+               x-max-file-size="@File.MaxSizeInBytes"
+               x-existing-file-id="@Model.Config.LetterData?.SignatureFileId"
+               x-existing-file-preview-height="6em" />
+
+        <button>
+            Save
+        </button>
+    </form>
+</section>

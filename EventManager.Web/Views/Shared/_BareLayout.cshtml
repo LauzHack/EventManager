@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"]</title>
+
+    @* Trigger a 'load' event for all inputs once the page is loaded; see InputTagHelper *@
+    <script>window.addEventListener('load', () => document.querySelectorAll('input, textarea, select').forEach(e => e.dispatchEvent(new Event('load'))));</script>
+</head>
+<body>
+    @RenderBody()
+</body>
+</html>

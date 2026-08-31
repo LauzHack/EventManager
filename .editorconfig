@@ -1,0 +1,69 @@
+# Top-level file
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = false
+trim_trailing_whitespace = true
+
+[*.cs]
+# "Async method lacks await", yes but that makes it easier to write than explicit Task.FromResult calls
+dotnet_diagnostic.CS1998.severity = none
+
+# "Don't publicly expose Lists", doesn't make much sense
+dotnet_diagnostic.CA1002.severity = none
+# Use EventHandler<T : EventArgs> for events, who cares
+dotnet_diagnostic.CA1003.severity = none
+# Standard exception constructors -- we don't care
+dotnet_diagnostic.CA1032.severity = none
+# Do not nest classes -- we don't care
+dotnet_diagnostic.CA1034.severity = none
+# "Validate parameters", since in theory someone could call us with null values even for non-null types, we don't care
+dotnet_diagnostic.CA1062.severity = none
+# Localization stuff -- would be nice, but English only for now
+dotnet_diagnostic.CA1303.severity = none
+# Match parameter name to declaration, not great when we want, e.g., "Participant participant" instead of "TUser user"
+dotnet_diagnostic.CA1725.severity = none
+# "Properties should not return arrays", tell that to EF Core's support for primitive collections :/
+dotnet_diagnostic.CA1819.severity = none
+# "Call ConfigureAwait", we don't care for low-level perf
+dotnet_diagnostic.CA2007.severity = none
+# Recommends compatibility with non-C# languages, we don't care
+dotnet_diagnostic.CA1716.severity = none
+dotnet_diagnostic.CA2225.severity = none
+
+# Enable string comparison related analysis
+dotnet_diagnostic.CA1307.severity = warning
+dotnet_diagnostic.CA1308.severity = warning
+dotnet_diagnostic.CA1309.severity = warning
+dotnet_diagnostic.CA1310.severity = warning
+dotnet_diagnostic.CA1311.severity = warning
+dotnet_diagnostic.CA1862.severity = warning
+
+# "Name parameters", often really unnecessary
+dotnet_diagnostic.MA0003.severity = none
+# Dupe of CA2007 which we've disabled already
+dotnet_diagnostic.MA0004.severity = none
+# "Add comma after last value", occasionally useful to minimize diffs but meh
+dotnet_diagnostic.MA0007.severity = none
+# "Method is too long", meh
+dotnet_diagnostic.MA0051.severity = none
+# same-ish as CA1003 which we disabled above
+dotnet_diagnostic.MA0046.severity = none
+
+# Enable some useful MA analyzers disabled by default
+dotnet_diagnostic.MA0045.severity = warning
+dotnet_diagnostic.MA0107.severity = warning
+dotnet_diagnostic.MA0112.severity = warning
+dotnet_diagnostic.MA0137.severity = warning
+dotnet_diagnostic.MA0138.severity = warning
+dotnet_diagnostic.MA0155.severity = warning
+dotnet_diagnostic.MA0172.severity = warning
+
+# these ones say "deprecated, use CA1822 instead"
+dotnet_diagnostic.MA0038.severity = none
+dotnet_diagnostic.MA0041.severity = none
+
+# https://github.com/dotnet/roslyn/issues/76560
+dotnet_diagnostic.IDE0079.severity = none

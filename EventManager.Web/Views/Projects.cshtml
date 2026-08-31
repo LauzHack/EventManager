@@ -1,0 +1,95 @@
+@model OperationResult.Projects
+@{
+    ViewData["Title"] = "Projects";
+    Layout = "_BareLayout";
+
+    // prefix + suffix ensures it's easy to do 'includes' in JS without conflicts for challenges with common prefixes
+    string ChallengeToCssClass(string challenge) => "_" + challenge.Replace(' ', '-') + "_";
+
+    await Html.RenderPartialAsync("~/Views/_MakeCssSelfContained.cshtml");
+}
+
+<script>
+    function doFilter(elem) {
+        var value = elem.value;
+        var articles = document.getElementsByTagName('main')[0].getElementsByTagName('article');
+        for (const article of articles) {
+            if (value == '' || article.className.includes(value)) {
+                article.style.display = 'block';
+            } else {
+                article.style.display = 'none';
+            }
+        }
+    }
+</script>
+
+<main>
+    @if (Model.Contents.Count == 0)
+    {
+        <p>There are no projects yet.</p>
+    }
+    else
+    {
+        var challenges = Model.Contents.SelectMany(p => p.Challenges).Distinct().Order().ToArray();
+
+        <h1>@Model.EventTitle Projects</h1>
+
+        if (challenges.Length > 0)
+        {
+            <select x-label="Challenges"
+                    onchange="doFilter(this)">
+                <option value="" selected="selected">any</option>
+                @foreach (var challenge in challenges)
+                {
+                    <option value="@ChallengeToCssClass(challenge)">@challenge</option>
+                }
+            </select>
+        }
+
+        <section style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-around; max-width: 100%">
+
+            @foreach (var project in Model.Contents)
+            {
+                <article style="width: 25em; margin: 2em"
+                         class="@string.Join(" ", project.Challenges.Select(ChallengeToCssClass))">
+                    <header style="padding: 1em; margin-bottom: 1em">
+                        <strong>@project.Title</strong>
+                        @foreach (var award in Model.Awards.GetValueOrDefault(project, []))
+                        {
+                            <mark>@award</mark>
+                        }
+                    </header>
+                    <img id="img-@project.ThumbnailId" style="display: none; max-height: 20vh; margin: auto" />
+                    <script>
+                        // Integrate images as base64 URLs on first load so the page is self-contained
+                        var img = document.getElementById('img-@project.ThumbnailId');
+                        if (img.style.display === 'none') {
+                            (async function()  {
+                                var response = await fetch('/File/@(project.ThumbnailId)');
+                                var buffer = await response.arrayBuffer();
+                                var base64 = await new Promise(r => {
+                                    var reader = new FileReader();
+                                    reader.onload = () => r(reader.result);
+                                    reader.readAsDataURL(new Blob([buffer]));
+                                });
+                                img.src = base64.replace('application/octet-stream', response.headers.get('Content-Type'));
+                                img.style.display = 'block';
+                            })();
+                        }
+                    </script>
+                    <details style="margin-top: 1em">
+                        <summary>@project.ShortDescription</summary>
+                        <p>@project.LongDescription</p>
+                    </details>
+                    <footer style="padding: 1em; margin-top: 1em">
+                        <p>
+                            @string.Join(", ", project.Team.Select(m => m.FullName))
+                            <br />
+                            <a href="@project.Link" target="_blank">Homepage</a>
+                        </p>
+                    </footer>
+                </article>
+            }
+        </section>
+    }
+</main>

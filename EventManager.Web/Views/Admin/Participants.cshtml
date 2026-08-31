@@ -1,0 +1,267 @@
+@model PageModel<IReadOnlyCollection<Participant>, Admin>
+
+@if (Model.Data.Count == 0)
+{
+    <section>
+        <p>
+            There are no participants yet.
+        </p>
+    </section>
+    return;
+}
+
+@* Only show the edit buttons when their parent is hovered or focused *@
+<style>
+    *:has(> a:not([href])) > a:not([href]) {
+        opacity: 0;
+        text-decoration: none;
+    }
+    *:has(> a:not([href])):hover > a:not([href]), *:has(> a:not([href])):focus-within > a:not([href]) {
+        opacity: 1;
+    }
+</style>
+<script>
+    function showEditEmail(email, name) {
+        var dialog = document.getElementById('edit-email-dialog');
+        var oldEmailInput = dialog.querySelector('input[name=oldEmailAddress]');
+        var text = document.getElementById('edit-dialog-message');
+        oldEmailInput.value = email;
+        text.textContent = "Set the new email for " + name + ":";
+        dialog.showModal();
+    }
+    function showEditRemarks(email, name, existingRemarks) {
+        var dialog = document.getElementById('edit-remarks-dialog');
+        var emailInput = dialog.querySelector('input[name=emailAddress]');
+        var remarksInput = dialog.querySelector('textarea[name=remarks]');
+        var text = document.getElementById('edit-remarks-message');
+        emailInput.value = email;
+        remarksInput.textContent = existingRemarks;
+        text.textContent = "Set the admin remarks for " + name + ":";
+        dialog.showModal();
+    }
+</script>
+<dialog id="edit-email-dialog">
+    <form action="/Admin/Participants/ChangeEmailAddress">
+        <article>
+            <input name="oldEmailAddress"
+                   type="hidden" />
+
+            <p id="edit-dialog-message"></p>
+
+            <input name="newEmailAddress"
+                   required
+                   type="email" />
+
+            <footer>
+                <button>
+                    Save
+                </button>
+            </footer>
+
+            <footer>
+                <button type="button"
+                        onclick="document.getElementById('edit-email-dialog').close()">
+                    Cancel
+                </button>
+            </footer>
+        </article>
+    </form>
+</dialog>
+<dialog id="edit-remarks-dialog">
+    <form action="/Admin/Participants/SetRemarks">
+        <article>
+            <input name="emailAddress"
+                   type="hidden" />
+
+            <p id="edit-remarks-message"></p>
+
+            <textarea name="remarks"
+                      required></textarea>
+
+            <footer>
+                <button>
+                    Save
+                </button>
+            </footer>
+
+            <footer>
+                <button type="button"
+                        onclick="document.getElementById('edit-remarks-dialog').close()">
+                    Cancel
+                </button>
+            </footer>
+        </article>
+    </form>
+</dialog>
+
+<section>
+    @if (Model.User.IsOwner)
+    {
+        <p>
+            You can download all participant data from the <a href="/Admin/Backup">backup page</a>.
+        </p>
+    }
+    else
+    {
+        <p>
+            Owners can download all participant data from the backup page.
+        </p>
+    }
+    <p>
+        Hover over a participant's email address to change it.
+    </p>
+    <p>
+        The admin remarks, which you can edit by hovering over, are displayed at check-in@(Model.Config.TravelReimbursementPolicy is null ? "" : " and in the travel reimbursement page").
+    </p>
+    <p>
+        Set the "soft reject" checkboxes then save using the button after the table to prevent specific participants @(Model.Config.EventLimits!.ApplicationGroupSize > 1 ? "and their groups " : "")
+        from being accepted without notifying them of this status. They will receive a rejection email at the same time other non-accepted participants once acceptance is over.
+    </p>
+</section>
+
+@{
+    var acceptedParticipants = Model.Data.Where(p => p.Status >= ParticipantStatus.Accepted).ToArray();
+}
+@if (acceptedParticipants.Length > 0)
+{
+    <section>
+        <details>
+            <summary>Details on accepted participants (click to expand)</summary>
+            @foreach (var choice in Model.Config.ProfileForm!.FreeChoices)
+            {
+                var groups = acceptedParticipants
+                    .GroupBy(p => p.Profile.GetValueOrDefault(choice.Name, ""), StringComparer.OrdinalIgnoreCase)
+                    .Where(g => !string.IsNullOrWhiteSpace(g.Key))
+                    .OrderBy(g => g.Key);
+                <p>
+                    @choice.Name:
+                </p>
+                <ul>
+                    @foreach (var g in groups)
+                    {
+                        <li><em>@g.Key</em>: @g.Count()</li>
+                    }
+                </ul>
+            }
+            @{
+                var referrers = acceptedParticipants.Where(p => p.Referrer is not null).GroupBy(p => p.Referrer).ToArray();
+            }
+            @if (referrers.Any())
+            {
+                <p>
+                    Referrer:
+                </p>
+                <ul>
+                    @foreach (var r in referrers)
+                    {
+                        <li><em>@r.Key</em>: @r.Count()</li>
+                    }
+                </ul>
+            }
+        </details>
+    </section>
+}
+
+<section>
+    <script src="~/pagination.js"></script>
+    <input id="search"
+           type="search"
+           placeholder="Filter by name, email address, or profile data..."
+           autocomplete="off" />
+    <input x-label="Include participants who have not verified their email address and input their name yet"
+           id="includeNoName"
+           type="checkbox"
+           role="switch" />
+    <table>
+        @foreach (var participant in Model.Data)
+        {
+            var search = participant.FullName
+                       + " " + participant.EmailAddress
+                       + " " + participant.AdminRemarks
+                       + " " + string.Join(" ", Model.Config.ProfileForm!.Choices.Where(c => !c.IsRequiredSingleOption).Select(c => participant.Profile.GetValueOrDefault(c.Name, "")));
+            <tr data-search="@search" data-has-name="@(participant.FullName is not null)">
+                <td>
+                    @if (participant.FullName is null)
+                    {
+                        <p><em>no name yet</em></p>
+                        <p>
+                            @participant.EmailAddress<a onclick="showEditEmail('@participant.EmailAddress', '@participant.FullName')">✏️</a>
+                        </p>
+                        <p>
+                            <small>@participant.Status.ToDisplayString()</small>
+                        </p>
+                    }
+                    else
+                    {
+                        <p>
+                            <strong>@participant.FullName</strong>
+                        </p>
+                        <p>
+                            @participant.EmailAddress<a onclick="showEditEmail('@participant.EmailAddress', '@participant.FullName')">✏️</a>
+                        </p>
+                        <p>
+                            <small>@participant.Status.ToDisplayString()</small>
+                        </p>
+                    }
+                </td>
+                <td>
+                    @foreach (var choice in Model.Config.ProfileForm!.Choices)
+                    {
+                        if (!choice.IsRequiredSingleOption && participant.Profile.TryGetValue(choice.Name, out var value))
+                        {
+                            <p>@choice.Name: @value</p>
+                        }
+                    }
+                    @if (participant.Referrer is not null)
+                    {
+                        <p>Referrer: @participant.Referrer</p>
+                    }
+                    <p>
+                        Admin remarks: @(participant.AdminRemarks ?? "<none>")<a onclick="showEditRemarks('@participant.EmailAddress', '@participant.FullName', @(JsonSerializer.Serialize(participant.AdminRemarks)))">✏️</a>
+                    </p>
+                </td>
+                <td>
+                    @if (participant.Status < ParticipantStatus.Accepted)
+                    {
+                        <input x-label="Soft reject"
+                               form="softReject"
+                               name="emailAddresses"
+                               type="checkbox"
+                               value="@participant.EmailAddress"
+                               checked="@(participant.IsSoftRejected ? "checked" : null)" />
+                    }
+                    @{
+                        var link = Authenticator.AddAuthentication(Model.Config.AuthenticationSecret!, Operation.CreatePageView<Participant>(), participant.EmailAddress);
+                    }
+                    <p>
+                        <a role="link" href="@link.RelativeUri" target="_blank">👤&nbsp;Impersonate</a>
+                    </p>
+                </td>
+            </tr>
+        }
+    </table>
+    <script>
+        var noNameToggle = document.getElementById('includeNoName');
+        var recompute = setupPagination({
+            root: 'table',
+            itemsSelector: 'tr',
+            pageSize: 10,
+            searchSelector: '#search',
+            emptyMessage: 'No participants match the search.',
+            extraFilter: item => {
+                return noNameToggle.checked || item.data.hasName == '@Boolean.TrueString';
+            },
+        });
+        noNameToggle.addEventListener('change', recompute);
+    </script>
+</section>
+
+<section>
+    <p>After using the soft rejection checkboxes, save the status here:</p>
+    <form id="softReject"
+          action="/Admin/Participants/SetSoftRejection">
+        <button>
+            Update soft rejection
+        </button>
+    </form>
+</section>

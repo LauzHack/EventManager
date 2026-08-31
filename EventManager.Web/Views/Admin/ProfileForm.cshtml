@@ -1,0 +1,74 @@
+@model PageModel
+
+<section>
+    @if (Model.Config.EventStatus >= EventStatus.ApplicationsOpen)
+    {
+        <p>
+            <strong>Applications are open, if you change the name of an existing choice/file or remove it, you will not be able to see what participants had picked!</strong>
+        </p>
+    }
+    <p>
+        Set up the questions people have to answer here, if any.
+        You can reorder choices and files if you want using the '⋯' anchors.
+    </p>
+    <form action="/Admin/ProfileForm/Edit">
+        <x-repeated-input label="Choices"
+                          stack-vertically="true"
+                          enable-drag-drop="true"
+                          existing-items="@Model.Config.ProfileForm?.Choices">
+            <input x-label="Name"
+                   name="form.Choices.Name"
+                   required
+                   type="text" />
+
+            <input x-label='Description'
+                   x-label-can-use-markdown="true"
+                   name="form.Choices.Description"
+                   required
+                   type="text" />
+
+            <input x-label="Required"
+                   name="form.Choices.IsRequired"
+                   type="checkbox" />
+
+            <textarea x-label="Options (one per line)"
+                      name="form.Choices.Options"></textarea>
+
+            <input x-label="Allows custom option"
+                   x-enforce-required-when-unchecked="form.Choices.Options"
+                   x-enforce-usable-when-checked="form.Choices.CustomOptionSuggestions"
+                   name="form.Choices.AllowsCustomOption"
+                   type="checkbox" />
+
+            <textarea x-label="Suggested custom option (one per line)"
+                      name="form.Choices.CustomOptionSuggestions"></textarea>
+        </x-repeated-input>
+
+        <x-repeated-input label="Files"
+                          stack-vertically="true"
+                          enable-drag-drop="true"
+                          existing-items="@Model.Config.ProfileForm?.Files">
+            <input x-label="Name"
+                   name="form.Files.Name"
+                   required
+                   type="text" />
+
+            <input x-label="Description"
+                   name="form.Files.Description"
+                   required
+                   type="text" />
+
+            <input x-label="Required"
+                   name="form.Files.IsRequired"
+                   type="checkbox" />
+
+            <textarea x-label="Allowed extensions (one per line, or leave blank to allow all)"
+                      name="form.Files.AllowedExtensions"
+                      placeholder="e.g., .pdf"></textarea>
+        </x-repeated-input>
+
+        <button>
+            Save
+        </button>
+    </form>
+</section>

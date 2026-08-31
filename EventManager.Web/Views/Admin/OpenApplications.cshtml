@@ -1,0 +1,38 @@
+@model PageModel<object, Admin>
+
+<section>
+    @if (Model.User.IsOwner)
+    {
+        <p>
+            You can open applications whenever you want.
+        </p>
+        <p>
+            Before doing so, you may:
+        </p>
+        <ul>
+            <li>Add more owners in the <a href="/Admin/Admins">admins management page</a>, to ensure the system does not depend on one single person.</li>
+            @if (Model.Config.LetterData is null)
+            {
+                <li>Set up visa invitation letters, for which you must first <a href="/Admin/LetterData">set up letters</a>.</li>
+            }
+            else if (Model.Config.VisaInvitationFormat is null)
+            {
+                <li><a href="/Admin/VisaInvitationLetters">Set up visa invitation letters</a>.</li>
+            }
+            @if (Model.Config.TravelReimbursementPolicy is null)
+            {
+                <li><a href="/Admin/TravelReimbursementPolicy">Set up a travel reimbursement policy</a>, though you can still set it later until check-in opens.</li>
+            }
+            <li>Customize <a href="/Admin/EventHints">hints</a> for application.</li>
+        </ul>
+        <form action="/Admin/OpenApplications/Open">
+            <button onclick="confirmAction(event, 'Are you sure you want to open applications now?')">
+                Open applications
+            </button>
+        </form>
+    }
+    else
+    {
+        <p>An owner can now open applications. You do not have ownership rights.</p>
+    }
+</section>

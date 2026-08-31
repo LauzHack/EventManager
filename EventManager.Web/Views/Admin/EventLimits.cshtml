@@ -1,0 +1,41 @@
+@model PageModel
+
+<section>
+    <form action="/Admin/EventLimits/Edit">
+        <input x-label="Maximal application group size"
+               x-label-details="1 = people apply alone"
+               name="limits.ApplicationGroupSize"
+               required
+               type="number"
+               min="1"
+               value="@Model.Config.EventLimits?.ApplicationGroupSize" />
+
+        <input x-label="Maximal project team size"
+               x-label-details="0 = no projects"
+               name="limits.ProjectTeamSize"
+               required
+               type="number"
+               min="0"
+               value="@Model.Config.EventLimits?.ProjectTeamSize" />
+
+        <input x-label="Days to confirm upon acceptance"
+               x-label-details="Consider at least 10 days for folks on a 1-week vacation"
+               name="limits.DaysToConfirm"
+               required
+               type="number"
+               min="1"
+               value="@Model.Config.EventLimits?.DaysToConfirm" />
+
+        <input x-label="Days between reminders to finalize / confirm"
+               x-label-details="3 works well in practice"
+               name="limits.DaysBetweenReminders"
+               required
+               type="number"
+               min="1"
+               value="@Model.Config.EventLimits?.DaysBetweenReminders" />
+
+        <button>
+            Save
+        </button>
+    </form>
+</section>

@@ -1,0 +1,102 @@
+@model PageModel<IReadOnlyCollection<Project>, Admin>
+
+@if (Model.Data.Count == 0)
+{
+    <section>
+        <p>No projects have been submitted yet.</p>
+    </section>
+    return;
+}
+
+@{
+    var hasChallenges = Model.Data.Any(p => p.Challenges.Length > 0);
+}
+
+<script src="~/pagination.js"></script>
+
+<section>
+    <p>
+        This page lets you view and search for projects.
+        It is meant to be easily copy-pasted into a judging sheet to which you add times and locations.
+    </p>
+    <p>
+        To view details about the projects@(hasChallenges ? " and filter them by challenge" : ""),
+        use the <a href="/Projects">public projects gallery</a>.
+    </p>
+    <p>
+        You can also see how many projects took each challenge at the end of the page.
+    </p>
+    <input id="search"
+           type="search"
+           placeholder="Search by title, short description, or team member names..."
+           autocomplete="off" />
+    <table>
+        @foreach (var project in Model.Data)
+        {
+            var search = project.Title + " " + project.ShortDescription + " " + string.Join(" ", project.Team.Select(m => m.FullName));
+
+            <tr data-search="@search">
+                <td>
+                    <p>
+                        <strong>@project.Title</strong>
+                    </p>
+                    <p>
+                        <small>@project.ShortDescription</small>
+                    </p>
+                </td>
+                @if (hasChallenges)
+                {
+                    <td>
+                        @if (project.Challenges.Length == 0)
+                        {
+                            <p><em>(no challenges)</em></p>
+                        }
+                        else
+                        {
+                            <p>@string.Join(", ", project.Challenges)</p>
+                        }
+                    </td>
+                }
+                <td>
+                    @foreach (var member in project.Team)
+                    {
+                        @* force non-breaking spaces *@
+                        <p>@member.FullName?.Replace(' ', '\u00A0')</p>
+                    }
+                </td>
+                <td>
+                    @if (Model.Config.EventStatus >= EventStatus.JudgingStarted)
+                    {
+                        if (project.Team.Any(p => p.Status == ParticipantStatus.Demoed))
+                        {
+                            <form action="/Admin/Projects/MarkAsNotDemoed">
+                                <input type="hidden" name="id" value="@project.Id" />
+                                <button>
+                                    Cancel marking as demoed
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form action="/Admin/Projects/MarkAsDemoed">
+                                <input type="hidden" name="id" value="@project.Id" />
+                                <button>
+                                    Mark as demoed
+                                </button>
+                            </form>
+                        }
+                    }
+                </td>
+            </tr>
+        }
+    </table>
+    <script>
+        setupPagination({
+            root: 'table',
+            itemsSelector: 'tr',
+            pageSize: 999999, // always show them all, so copy-pasting is easy
+            searchSelector: '#search',
+            emptyMessage: 'No projects match the search.'
+        });
+    </script>
+</section>

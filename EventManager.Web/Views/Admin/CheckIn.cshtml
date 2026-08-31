@@ -1,0 +1,139 @@
+@model PageModel<IReadOnlyCollection<Participant>, Admin>
+
+<section>
+    @{
+        var checkedInCount = Model.Data.Count(u => u.Status >= ParticipantStatus.CheckedIn);
+        var remainingCount = Model.Data.Count - checkedInCount;
+    }
+    <p>
+        @checkedInCount participants checked in.
+    </p>
+    <p>
+        @remainingCount confirmed participants remaining.
+    </p>
+
+    <script src="~/pagination.js"></script>
+    <input id="search"
+           type="search"
+           placeholder="Filter by name..."
+           autocomplete="off" />
+    <table>
+        @foreach (var participant in Model.Data)
+        {
+            <tr data-search="@participant.FullName">
+                <td>
+                    <hgroup>
+                        <h3>
+                            @participant.FullName
+                        </h3>
+                        <p>
+                            @participant.EmailAddress
+                        </p>
+                    </hgroup>
+                </td>
+                <td>
+                    @if (participant.Status >= ParticipantStatus.CheckedIn)
+                    {
+                        <form action="/Admin/CheckIn/CancelCheckIn">
+                            <input name="emailAddress"
+                                   type="hidden"
+                                   value="@participant.EmailAddress" />
+
+                            <button>
+                                Cancel check-in
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form action="/Admin/CheckIn/CheckIn">
+                            <input name="emailAddress"
+                                   type="hidden"
+                                   value="@participant.EmailAddress" />
+
+                            <button>
+                                Check in
+                            </button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </table>
+    <script>
+            setupPagination({
+                root: 'table',
+                itemsSelector: 'tr',
+                pageSize: 10,
+                searchSelector: '#search',
+                emptyMessage: 'No confirmed participants match the search.'
+            });
+    </script>
+</section>
+
+<section>
+    <h2>Check in someone else</h2>
+    <p>
+        This will add a participant to the system's database, or check in an existing participant that was not accepted or did not confirm.
+    </p>
+    <form action="/Admin/CheckIn/CheckInUnknown">
+        <input x-label="Email address"
+               name="emailAddress"
+               required
+               type="email" />
+
+        <input x-label="Given name"
+               name="givenName"
+               required
+               type="text" />
+
+        <input x-label="Family name"
+               name="familyName"
+               type="text" />
+
+        <button>
+            Check in
+        </button>
+    </form>
+</section>
+
+<section>
+    @if (Model.Config.EventStatus == EventStatus.CheckInStarted)
+    {
+        @if (Model.User.IsOwner)
+        {
+            <h2>End check-in</h2>
+            <p>
+                This will end the regular check-in period, though you can still check people in or restart check-in later.
+            </p>
+            <form action="/Admin/CheckIn/FinishCheckIn">
+                <button>
+                    Finish
+                </button>
+            </form>
+        }
+        else
+        {
+            <p>An owner can end the regular check-in period. You do not have ownership rights.</p>
+        }
+    }
+    else
+    {
+        @if (Model.User.IsOwner)
+        {
+            <h2>Restart check-in</h2>
+            <p>
+                This will restart the regular check-in period.
+            </p>
+            <form action="/Admin/CheckIn/RestartCheckIn">
+                <button>
+                    Restart
+                </button>
+            </form>
+        }
+        else
+        {
+            <p>An owner can restart the regular check-in period. You do not have ownership rights.</p>
+        }
+    }
+</section>

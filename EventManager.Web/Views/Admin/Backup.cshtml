@@ -1,0 +1,53 @@
+@model PageModel
+
+<section>
+    <h2>Export participant data</h2>
+    <p>
+        You can download a CSV containing all participants, as well as a ZIP file with all files participants uploaded.
+    </p>
+    <form action="/Admin/Backup/ExportParticipantsCsv">
+        <button>
+            Download CSV with participants' data
+        </button>
+    </form>
+    <form action="/Admin/Backup/ExportParticipantFiles">
+        <input x-label="Only include files of confirmed participants"
+               name="onlyConfirmed"
+               type="checkbox"
+               checked />
+        <button>
+            Download ZIP with participants' files
+        </button>
+    </form>
+</section>
+
+<section>
+    <h2>Backup entire system</h2>
+    <p>
+        You can download a backup of the entire system.
+    </p>
+    <form action="/Admin/Backup/Export">
+        <button>
+            Download backup
+        </button>
+    </form>
+</section>
+
+<section>
+    <h2>Restore system from backup</h2>
+    <p>
+        This will reset the entire system to the state of the backup. Your admin account will be preserved even if it did not exist at backup time.
+    </p>
+    <form x-enforce-acknowledgement="I understand all system changes after the backup was made will be lost, including participant data"
+          action="/Admin/Backup/Import">
+        <input x-label="Backup file" name="backup"
+               required
+               type="file"
+               accept="@Backup.FileExtension"
+               x-max-file-size="int.MaxValue" />
+
+        <button>
+            Restore
+        </button>
+    </form>
+</section>

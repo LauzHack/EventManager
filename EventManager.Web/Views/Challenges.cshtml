@@ -1,0 +1,31 @@
+@model OperationResult.Challenges
+@{
+    ViewData["Title"] = "Challenges";
+    Layout = "_BareLayout";
+
+    await Html.RenderPartialAsync("~/Views/_MakeCssSelfContained.cshtml");
+}
+
+@if (Model.Setters.Count == 0)
+{
+    <main><p>No challenges have been set.</p></main>
+    return;
+}
+
+<main>
+    <h1>@Model.EventTitle Challenges</h1>
+    @foreach (var setter in Model.Setters)
+    {
+        <section>
+            <h2>@setter.Name</h2>
+            @if (setter.Description is null)
+            {
+                <p><em>Unknown challenge.</em></p>
+            }
+            else
+            {
+                @Html.Raw(Markdown.ToHtml(setter.Description))
+            }
+        </section>
+    }
+</main>

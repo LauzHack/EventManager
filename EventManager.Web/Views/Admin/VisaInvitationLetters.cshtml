@@ -1,0 +1,126 @@
+@model PageModel<IReadOnlyCollection<Participant>, Admin>
+
+<section>
+    @if (Model.Config.VisaInvitationFormat is null)
+    {
+        <p>
+            The visa invitation letter format has not been configured yet, thus participants cannot request such a letter.
+        </p>
+    }
+    else if (Model.Data.Count == 0)
+    {
+        <p>
+            There are no visa invitation letter requests yet.
+        </p>
+    }
+    else
+    {
+        <p>
+            To issue a letter, provide the following details: @Model.Config.VisaInvitationFormat.AdminDetails.
+        </p>
+
+        bool handlingNew = true;
+        @foreach (var participant in Model.Data)
+        {
+            if (handlingNew && participant.VisaInformation.AdminDetails is not null)
+            {
+                handlingNew = false;
+                <h3>Handled requests</h3>
+            }
+            <fieldset role="group">
+                <p>
+                    <strong>@participant.FullName</strong>
+                    <br />
+                    <small>@participant.EmailAddress</small>
+                </p>
+                <p>@string.Join(", ", participant.VisaInformation.ParticipantDetails)</p>
+                <p>
+                    <a href="/File/@participant.VisaInformation.PassportPhotoId" download>View passport</a>
+                    @if (participant.VisaInformation.Letter is not null)
+                    {
+                        <br />
+                        <a href="/Letter/@participant.VisaInformation.Letter.Id" target="_blank">View letter</a>
+                    }
+                </p>
+            </fieldset>
+            <fieldset role="group">
+                <input form="accept-@participant.EmailAddress"
+                       name="details"
+                       required
+                       type="text"
+                       value="@participant.VisaInformation.AdminDetails"
+                       placeholder="Details" />
+
+                <button form="accept-@participant.EmailAddress">
+                    @(participant.VisaInformation.AdminDetails is null ? "Submit" : "Update")
+                </button>
+
+                <input form="reject-@participant.EmailAddress"
+                       name="reason"
+                       required
+                       type="text"
+                       placeholder="Rejection reason" />
+
+                <button form="reject-@participant.EmailAddress"
+                        role="link"
+                        onclick="confirmAction(event, 'Are you sure you want to reject the request made by @participant.FullName?');">
+                    Reject
+                </button>
+
+                <form id="accept-@participant.EmailAddress"
+                      action="/Admin/VisaInvitationLetters/Accept">
+                    <input name="emailAddress"
+                           type="hidden"
+                           value="@participant.EmailAddress" />
+
+                </form>
+                <form id="reject-@participant.EmailAddress"
+                      action="/Admin/VisaInvitationLetters/Reject">
+                    <input name="emailAddress"
+                           type="hidden"
+                           value="@participant.EmailAddress" />
+
+                </form>
+            </fieldset>
+        }
+    }
+</section>
+
+<section>
+    <h2>Format</h2>
+    @if (Model.User.IsOwner)
+    {
+        <form action="/Admin/VisaInvitationLetters/SetFormat">
+            <textarea x-label="Body template"
+                      x-label-details="Must include @VisaInvitationFormat.TemplateNamePlaceholder (participant name) and @VisaInvitationFormat.TemplateDetailsPlaceholder (details set by admins, defined below) placeholders."
+                      x-label-can-use-markdown="true"
+                      x-enforce-placeholders="@VisaInvitationFormat.TemplateNamePlaceholder, @VisaInvitationFormat.TemplateDetailsPlaceholder"
+                      name="format.Template"
+                      required>@Model.Config.VisaInvitationFormat?.Template</textarea>
+
+            <x-repeated-input label="Details the participants must provide"
+                              enable-drag-drop="true"
+                              existing-items="@Model.Config.VisaInvitationFormat?.ParticipantDetails">
+                <input name="format.ParticipantDetails"
+                       required
+                       type="text" />
+            </x-repeated-input>
+
+            <input x-label="Details admins must provide, which will replace the @VisaInvitationFormat.TemplateDetailsPlaceholder placeholder in the body"
+                   name="format.AdminDetails"
+                   required
+                   type="text"
+                   value="@Model.Config.VisaInvitationFormat?.AdminDetails" />
+
+            <button>
+                @(Model.Config.VisaInvitationFormat is null ? "Set" : "Save changes")
+            </button>
+        </form>
+    }
+    else
+    {
+        <p>
+            You do not have ownership rights, thus you cannot configure the visa invitation letter format.
+        </p>
+    }
+</section>

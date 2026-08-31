@@ -1,0 +1,31 @@
+@model PageModel
+
+<section>
+    <form action="/Admin/EventTheme/Edit">
+        <input x-label="Primary color"
+               name="backgroundColor"
+               required
+               type="color"
+               value="@Model.Config.EventTheme?.BackgroundColor" />
+
+        <input x-label="Logo, used in the top banner"
+               name="logo"
+               required
+               type="file"
+               x-max-file-size="@File.MaxSizeInBytes"
+               x-existing-file-id="@Model.Config.EventTheme?.LogoFileId"
+               x-existing-file-preview-height="6em" />
+
+        <input x-label='Icon, used as the tab icon in Web browsers ("favicon")'
+               name="icon"
+               required
+               type="file"
+               x-max-file-size="@File.MaxSizeInBytes"
+               x-existing-file-id="@Model.Config.EventTheme?.IconFileId"
+               x-existing-file-preview-height="32px" />
+
+        <button>
+            Save
+        </button>
+    </form>
+</section>
