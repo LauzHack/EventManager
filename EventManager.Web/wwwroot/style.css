@@ -36,11 +36,11 @@ button[role=link] { border: 0; background-color: transparent; color: var(--pico-
 fieldset[role=group] button[role=link] { padding: 0 0.5em; }
 /* Quiet links */
 a[role=link] { text-decoration: none; }
-/* Make tables usable on small-width devices like mobile phones */
+/* Make tables with >=3 columns usable on small-width devices like mobile phones */
 @media (max-width: 999px) {
-    main tbody, main tr, main td { display: block; }
-    main tr { margin-bottom: 1rem; border: 1px solid var(--pico-muted-color); }
-    main td { padding: 0.5rem; }
+    main tbody:has(tr > :nth-child(3)), main tr:has(:nth-child(3)), main tr:has(:nth-child(3)) td { display: block; }
+    main tr:has(:nth-child(3)) { margin-bottom: 1rem; border: 1px solid var(--pico-muted-color); }
+    main tr:has(:nth-child(3)) td { padding: 0.5rem; }
 }
 /* Colors for logs (taken from Pico CSS's colors) */
 .info { background: #D1E5FB; }
