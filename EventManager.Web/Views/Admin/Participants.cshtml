@@ -249,7 +249,7 @@
             searchSelector: '#search',
             emptyMessage: 'No participants match the search.',
             extraFilter: item => {
-                return noNameToggle.checked || item.data.hasName == '@Boolean.TrueString';
+                return noNameToggle.checked || item.dataset.hasName === '@bool.TrueString';
             },
         });
         noNameToggle.addEventListener('change', recompute);
