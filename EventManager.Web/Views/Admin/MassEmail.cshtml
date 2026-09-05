@@ -60,7 +60,7 @@
 
         <input x-label="Include a link to apply"
                x-enforce-usable-when-checked="applicationReferrer"
-               disabled="@(Model.Config.EventStatus >= EventStatus.ApplicationsOpen ? "" : "disabled")"
+               disabled="@(Model.Config.EventStatus >= EventStatus.ApplicationsOpen ? null : "disabled")"
                name="includeApplicationLink"
                type="checkbox" />
 
