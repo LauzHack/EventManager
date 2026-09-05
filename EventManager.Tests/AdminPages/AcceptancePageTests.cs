@@ -113,10 +113,12 @@ public sealed class AcceptancePageTests : AdminTestsBase
         var newFirst = await Db.Participants.FindAsync("alice@example.org");
         Assert.IsNotNull(newFirst);
         Assert.AreEqual(ParticipantStatus.Accepted, newFirst.Status);
+        Assert.AreEqual(TimeProvider.GetUtcNow(), newFirst.LastStatusReminderDate);
 
         var newSecond = await Db.Participants.FindAsync("bob@example.org");
         Assert.IsNotNull(newSecond);
         Assert.AreEqual(ParticipantStatus.Accepted, newSecond.Status);
+        Assert.AreEqual(TimeProvider.GetUtcNow(), newSecond.LastStatusReminderDate);
 
         var group = await Db.ApplicationGroups.FirstOrDefaultAsync(g => g.Members.Contains(newFirst));
         Assert.IsNotNull(group);

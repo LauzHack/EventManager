@@ -10,7 +10,7 @@ using EventManager.Models;
 
 namespace EventManager.ParticipantPages;
 
-public sealed class ProfilePage(ProfileForm profileForm, FileStorage fileStorage, EmailSender emailSender) : Page<Participant>
+public sealed class ProfilePage(ProfileForm profileForm, FileStorage fileStorage, EmailSender emailSender, TimeProvider timeProvider) : Page<Participant>
 {
     public const string FileRemovalPrefix = "remove-";
 
@@ -82,6 +82,7 @@ public sealed class ProfilePage(ProfileForm profileForm, FileStorage fileStorage
         }
 
         participant.Status = ParticipantStatus.ProfileFilled;
+        participant.LastStatusReminderDate = timeProvider.GetUtcNow();
         return Success(text.ToString());
     }
 

@@ -23,7 +23,7 @@ public sealed class AcceptanceReminderTask(DbValues<ApplicationGroup> groups, Ev
         var allGroups = await groups.ToCollectionAsync();
         var toRemind = allGroups.Where(g => now - g.AcceptanceDate >= TimeSpan.FromDays(limits.DaysBetweenReminders))
                                 .SelectMany(g => g.Members.Where(p => p.Status == ParticipantStatus.Accepted))
-                                .Where(p => !p.LastStatusReminderDate.HasValue || now - p.LastStatusReminderDate.Value >= TimeSpan.FromDays(limits.DaysBetweenReminders))
+                                .Where(p => p.LastStatusReminderDate.HasValue && now - p.LastStatusReminderDate.Value >= TimeSpan.FromDays(limits.DaysBetweenReminders))
                                 .ToArray();
 
         await emailSender.SendAsync([.. toRemind.Select(participant => new Email(

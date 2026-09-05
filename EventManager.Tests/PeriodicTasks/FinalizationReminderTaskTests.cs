@@ -72,10 +72,9 @@ public sealed class FinalizationReminderTaskTests : TestsBase
 
         await new FinalizationReminderTask(Db.Participants, EventLimits, EmailSender, TimeProvider).RunAsync();
 
-        Assert.HasCount(3, EmailSender.Outbox);
+        Assert.HasCount(2, EmailSender.Outbox);
         Assert.AreEqual("bob@example.org", EmailSender.Outbox[0].Recipient);
         Assert.AreEqual("carol@example.org", EmailSender.Outbox[1].Recipient);
-        Assert.AreEqual("daniel@example.org", EmailSender.Outbox[2].Recipient);
         Assert.AreEqual(Operation.CreatePageView<Participant>(), EmailSender.Outbox[0].Operation);
     }
 
