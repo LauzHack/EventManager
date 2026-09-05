@@ -4,9 +4,37 @@
 > We do not provide any compatibility guarantee across major versions.
 > The database schema may change between them, so you should only update the app within a major version, e.g., v1.0 to v1.1, _not_ v1.1 to v2.0.
 
+### Azure (recommended)
+
 This system runs fine on a Linux "B1" Azure instance, which is the cheapest non-free option.
 
-**TBD. We are currently experimenting with what the simplest way to deploy this system is. Please come back later.**
+Create a new "Web App".
+
+Select, in this order:
+- Publish: `Container`
+- Operating System: `Linux`
+- Region: (wherever is closest to your event)
+- Resource Group: `Create new`
+- Linux Plan: (leave as `(New) ...`)
+- Pricing plan: `Basic B1`
+- Name: (whatever you want to name it)
+
+In the tabs at the top, select "Container", and:
+- Sidecar support: `Disabled`
+- Image Source: `Other container registries`
+- Access Type: `Public`
+- Registry server URL: `https://ghcr.io`
+- Image and tag: `lauzhack/eventmanager:version-1` (or another version)
+- Startup command: (leave empty)
+
+Click on the "Review+Create" button at the bottom, double-check, then click on the "Create" button.
+
+Go to the created web app once deployment is done, and in the left menu go to "Settings" > "Environment variables",
+set `WEBSITES_ENABLE_APP_SERVICE_STORAGE` to `true`. Click on the "Apply" button, then again the bottom "Apply" button for all variables, then confirm.
+
+_If you want a custom domain name, now's the time to configure it._ The system uses cookies for authentication, so configure your domain name before you configure the first admin.
+
+Finally, go to "Overview" and click "Restart" at the top. Wait a little, then open the web app (through the custom domain name, if using).
 
 ### Deploy a fork
 
