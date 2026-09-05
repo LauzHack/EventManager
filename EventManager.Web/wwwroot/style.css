@@ -33,7 +33,7 @@ fieldset[role=group] button { background: transparent !important; color: var(--p
 article footer:not(:first-of-type) button { background: transparent !important; color: var(--pico-primary-background) !important; }
 /* Link buttons */
 button[role=link] { border: 0; background-color: transparent; color: var(--pico-background-color); display: inline; width: auto; margin: 0; padding: 0; }
-fieldset[role=group] button[role=link] { padding: 0.5em; }
+fieldset[role=group] button[role=link] { padding: 0 0.5em; }
 /* Quiet links */
 a[role=link] { text-decoration: none; }
 /* Make tables usable on small-width devices like mobile phones */
