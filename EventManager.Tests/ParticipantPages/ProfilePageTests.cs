@@ -103,6 +103,7 @@ public sealed class ProfilePageTests : ParticipantTestsBase
             var newParticipant = await GetParticipantAsync();
             Assert.IsNotNull(newParticipant);
             Assert.AreEqual(ParticipantStatus.ProfileFilled, newParticipant.Status);
+            Assert.AreEqual(TimeProvider.GetUtcNow(), newParticipant.LastStatusReminderDate);
         }
     }
 
@@ -494,7 +495,7 @@ public sealed class ProfilePageTests : ParticipantTestsBase
     }
 
     private ProfilePage CreatePage(ProfileForm form, bool disableEmails = true)
-        => new(form, FileStorage, disableEmails ? DisabledEmailSender : EmailSender);
+        => new(form, FileStorage, disableEmails ? DisabledEmailSender : EmailSender, TimeProvider);
 
     private static OperationArguments FileFormValues(params (string, string)[] values)
         => values.Aggregate(OperationArguments.Empty, (o, p) => o.WithFile(p.Item1, new File.InMemory(p.Item1, p.Item2, [0, 1, 2, 3])));

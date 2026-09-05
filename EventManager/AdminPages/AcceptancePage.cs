@@ -199,6 +199,7 @@ public sealed class AcceptancePage(DbValues<Participant> participants, DbValues<
                 }
 
                 participant.Status = ParticipantStatus.Accepted;
+                participant.LastStatusReminderDate = timeProvider.GetUtcNow();
                 emails.Add(new Email(
                      Recipient: participant.EmailAddress,
                      Subject: "Acceptance",

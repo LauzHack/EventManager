@@ -22,7 +22,7 @@ public sealed class FinalizationReminderTask(DbValues<Participant> participants,
         var toRemind = await participants
             .Where(p => p.Status == ParticipantStatus.ProfileFilled)
             .ToCollectionAsync();
-        toRemind = [.. toRemind.Where(p => !p.LastStatusReminderDate.HasValue || now - p.LastStatusReminderDate.Value >= TimeSpan.FromDays(limits.DaysBetweenReminders))];
+        toRemind = [.. toRemind.Where(p => p.LastStatusReminderDate.HasValue && now - p.LastStatusReminderDate.Value >= TimeSpan.FromDays(limits.DaysBetweenReminders))];
 
         await emailSender.SendAsync([.. toRemind.Select(participant => new Email(
             Recipient: participant.EmailAddress,

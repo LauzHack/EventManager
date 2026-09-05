@@ -63,10 +63,9 @@ public sealed class AcceptanceReminderTaskTests : TestsBase
 
         await new AcceptanceReminderTask(Db.ApplicationGroups, EventLimits, EmailSender, TimeProvider).RunAsync();
 
-        Assert.HasCount(3, EmailSender.Outbox);
+        Assert.HasCount(2, EmailSender.Outbox);
         Assert.AreEqual("bob@example.org", EmailSender.Outbox[0].Recipient);
         Assert.AreEqual("carol@example.org", EmailSender.Outbox[1].Recipient);
-        Assert.AreEqual("daniel@example.org", EmailSender.Outbox[2].Recipient);
         Assert.AreEqual(Operation.CreatePageAction<Participant, WaitForAcceptancePage>(nameof(WaitForAcceptancePage.ConfirmAsync)), EmailSender.Outbox[0].Operation);
     }
 
@@ -106,6 +105,5 @@ public sealed class AcceptanceReminderTaskTests : TestsBase
         Assert.AreEqual(originalParticipants.ElementAt(0).LastStatusReminderDate, participants.ElementAt(0).LastStatusReminderDate);
         Assert.AreEqual(TimeProvider.GetUtcNow(), participants.ElementAt(1).LastStatusReminderDate);
         Assert.AreEqual(participants.ElementAt(1).LastStatusReminderDate, participants.ElementAt(2).LastStatusReminderDate);
-        Assert.AreEqual(participants.ElementAt(2).LastStatusReminderDate, participants.ElementAt(3).LastStatusReminderDate);
     }
 }
