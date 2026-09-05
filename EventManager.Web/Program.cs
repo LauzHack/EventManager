@@ -56,6 +56,8 @@ public sealed class Program
              || url.EndsWith("/404", StringComparison.OrdinalIgnoreCase)
             // even when a non-ico favicon is configured some browsers ask for this
              || url.EndsWith("/favicon.ico", StringComparison.OrdinalIgnoreCase)
+            // iOS wants this
+             || url.EndsWith("/apple-touch-icon.png", StringComparison.OrdinalIgnoreCase)
             // Azure sends requests to `/robots933456.txt` to check that the website is alive
              || url.EndsWith("/robots933456.txt", StringComparison.OrdinalIgnoreCase)
             // Chrome/ium dev tools ask for this on localhost 
