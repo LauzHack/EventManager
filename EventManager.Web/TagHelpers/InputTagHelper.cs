@@ -106,7 +106,7 @@ public sealed class InputTagHelper : TagHelper
                 }
                 details += "You can use <a target=\" _blank\" href=\"https://commonmark.org/help/\">Markdown</a>.";
             }
-            if (MaxFileSizeInBytes is uint maxSize)
+            if (MaxFileSizeInBytes is uint maxSize && maxSize < uint.MaxValue)
             {
                 if (details is not "")
                 {
@@ -313,16 +313,19 @@ public sealed class InputTagHelper : TagHelper
         {
             if (MaxFileSizeInBytes is uint maxSize)
             {
-                AddOnLoad(output, $$"""
-                    this.addEventListener('change', event => {
-                        if (event.target.files && event.target.files[0]) {
-                            if (event.target.files[0].size > {{maxSize.ToString(CultureInfo.InvariantCulture)}}) {
-                                event.target.value = '';
-                                showAlert('Error', 'This file exceeds the maximum size of {{(maxSize / 1024).ToString(CultureInfo.InvariantCulture)}} KB. Please select another file.');
+                if (maxSize < uint.MaxValue)
+                {
+                    AddOnLoad(output, $$"""
+                        this.addEventListener('change', event => {
+                            if (event.target.files && event.target.files[0]) {
+                                if (event.target.files[0].size > {{maxSize.ToString(CultureInfo.InvariantCulture)}}) {
+                                    event.target.value = '';
+                                    showAlert('Error', 'This file exceeds the maximum size of {{(maxSize / 1024).ToString(CultureInfo.InvariantCulture)}} KB. Please select another file.');
+                                }
                             }
-                        }
-                    });
-                """);
+                        });
+                    """);
+                }
             }
             else
             {
