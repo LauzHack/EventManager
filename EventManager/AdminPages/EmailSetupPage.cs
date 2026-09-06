@@ -27,7 +27,7 @@ public sealed class EmailSetupPage(Db database,
         {
             return RequiredView("Email setup");
         }
-        if (admin is null)
+        if (admin is null || !admin.IsOwner)
         {
             return ForbiddenView();
         }
@@ -67,11 +67,10 @@ public sealed class EmailSetupPage(Db database,
             return Error($"Couldn't send an email, please try inputting the values again. (Error message: {e.Message})");
         }
 
-        // Only add it if the email could be sent, let's not add unnecessary admins.
         // This can be used to add new admins, that's fine, the alternative is that the main admin might misspell their email address and then can't change it...
         if (await database.Admins.FindAsync(adminEmailAddress) is null)
         {
-            database.Admins.Add(new Admin(adminEmailAddress));
+            database.Admins.Add(new Admin(adminEmailAddress) { IsOwner = true });
         }
 
         return ImportantInformation("Please log in via email to continue. (If you do not receive an email, please double-check the values and try again)");
@@ -79,14 +78,14 @@ public sealed class EmailSetupPage(Db database,
 
     public async Task<StatusMessage> VerifyEmailAddressAsync(Admin admin)
     {
-        // We must check this since admins with an already-verified email address, i.e., all other admins, can't use this to make themselves owner
         if (!admin.IsEmailAddressVerified || admin.NeedsReverificationAfterBackupImport)
         {
             admin.IsEmailAddressVerified = true;
             admin.NeedsReverificationAfterBackupImport = false;
-            admin.IsOwner = true;
+            return Success("You're logged in! Now you can configure the event.");
         }
-        return Success("You're logged in! Now you can configure the event.");
+
+        return NoChange();
     }
 
     public async Task<StatusMessage> ImportBackupAsync(string adminEmailAddress, File backup)
@@ -100,7 +99,7 @@ public sealed class EmailSetupPage(Db database,
         }
         else
         {
-            database.Admins.Add(new Admin(adminEmailAddress) { NeedsReverificationAfterBackupImport = true });
+            database.Admins.Add(new Admin(adminEmailAddress) { IsOwner = true, NeedsReverificationAfterBackupImport = true });
         }
 
         var email = new Email(

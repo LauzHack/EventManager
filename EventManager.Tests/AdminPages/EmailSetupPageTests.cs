@@ -62,6 +62,28 @@ public sealed class EmailSetupPageTests : AdminTestsBase
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task PageIsEditableToOwnersOnlyOnceConfigured(bool isOwner)
+    {
+        {
+            var admin = await GetAdminAsync();
+            admin.IsEmailAddressVerified = true;
+            var config = await Config.CreateAsync(Db);
+            config.Set(new AuthenticationSecret([0, 1, 2, 3]));
+            config.Set(new EmailSenderSettings(new Uri("smtp://example.com:587", UriKind.Absolute), "x", "x", "x", "y@example.org", "z@example.org"));
+            await Db.CommitAsync();
+        }
+
+        var otherAdmin = isOwner ? await GetAdminAsync() : await CreateNonOwnerAdminAsync();
+        var page = await CreatePageAsync();
+        var result = await page.ViewAsync(otherAdmin);
+
+        Assert.IsFalse(result.IsRequired);
+        Assert.AreEqual(isOwner, result.IsInteractable);
+    }
+
+    [TestMethod]
     public async Task EditReturnsErrorWhenEmailFailsToSend()
     {
         var sender = new BrokenEmailSender();
@@ -163,10 +185,10 @@ public sealed class EmailSetupPageTests : AdminTestsBase
     }
 
     [TestMethod]
-    public async Task VerifyEmailAddressSetsVerifiedAndOwnerProperties()
+    public async Task VerifyEmailAddressSetsVerifiedProperty()
     {
         {
-            Db.Admins.Add(new("new-admin@example.org"));
+            Db.Admins.Add(new Admin("new-admin@example.org") { IsOwner = true });
             await Db.CommitAsync();
         }
 
@@ -181,16 +203,15 @@ public sealed class EmailSetupPageTests : AdminTestsBase
         var newNewAdmin = await Db.Admins.FindAsync("new-admin@example.org");
         Assert.IsNotNull(newNewAdmin);
         Assert.IsTrue(newNewAdmin.IsEmailAddressVerified);
-        Assert.IsTrue(newNewAdmin.IsOwner);
     }
 
     [TestMethod]
     public async Task VerifyEmailAddressDoesNotChangeExistingAdmin()
     {
-        var notOwner = await CreateNonOwnerAdminAsync();
+        var notOwner = await CreateOtherOwnerAdminAsync();
         var page = await CreatePageAsync(DisabledEmailSender);
         var result = await page.VerifyEmailAddressAsync(notOwner);
-        Assert.AreEqual(Status.Success, result.Status);
+        Assert.AreEqual(Status.None, result.Status);
         Db.EnsureNoChanges();
     }
 

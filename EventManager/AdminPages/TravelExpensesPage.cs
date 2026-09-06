@@ -14,6 +14,9 @@ public sealed class TravelExpensesPage(DbValues<Participant> participants, DbVal
                                        TravelReimbursementPolicy? policy,
                                        FileStorage fileStorage, EmailSender emailSender, TimeProvider timeProvider) : Page<Admin>
 {
+    public override bool RedisplayAfterAction
+        => true;
+
     public override async Task<PageView> ViewAsync(Admin admin)
     {
         if (policy is null)

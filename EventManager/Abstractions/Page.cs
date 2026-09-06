@@ -22,6 +22,11 @@ public abstract class Page
     public abstract bool UserIsRequired { get; }
 
     /// <summary>
+    /// Whether this page should be displayed again after an action is performed on it.
+    /// </summary>
+    public virtual bool RedisplayAfterAction => false;
+
+    /// <summary>
     /// Gets a view to display for the page.
     /// </summary>
     internal abstract Task<PageView> ViewAsync(object? user);

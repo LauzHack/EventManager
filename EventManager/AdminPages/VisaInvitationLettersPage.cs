@@ -11,6 +11,9 @@ public sealed class VisaInvitationLettersPage(DbValues<Participant> participants
                                               LetterData? letterData, ConfigValue<VisaInvitationFormat> inviteFormat,
                                               EmailSender emailSender, TimeProvider timeProvider) : Page<Admin>
 {
+    public override bool RedisplayAfterAction
+        => true;
+
     public override async Task<PageView> ViewAsync(Admin admin)
     {
         const string Title = "Visa invitation letters";

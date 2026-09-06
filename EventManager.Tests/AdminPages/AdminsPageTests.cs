@@ -66,6 +66,7 @@ public sealed class AdminsPageTests : AdminTestsBase
     {
         {
             var page = new AdminsPage(Db.Admins, EmailSender);
+            Assert.IsTrue(page.RedisplayAfterAction);
             var result = await page.AddAsync(await GetAdminAsync(), "admin2@example.org", owner);
             Assert.AreEqual(Status.Success, result.Status);
             await Db.CommitAsync();

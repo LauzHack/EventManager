@@ -13,6 +13,9 @@ namespace EventManager.AdminPages;
 
 public sealed class BackupPage(Db db, EventDetails eventDetails, ProfileForm profileForm, FileStorage fileStorage, TimeProvider timeProvider) : Page<Admin>
 {
+    public override bool RedisplayAfterAction
+        => true;
+
     public override async Task<PageView> ViewAsync(Admin admin)
     {
         if (admin.IsOwner)
