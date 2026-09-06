@@ -12,11 +12,11 @@
 
 @* Only show the edit buttons when their parent is hovered or focused *@
 <style>
-    *:has(> a:not([href])) > a:not([href]) {
+    *:has(> .edit-link) > .edit-link {
         opacity: 0;
         text-decoration: none;
     }
-    *:has(> a:not([href])):hover > a:not([href]), *:has(> a:not([href])):focus-within > a:not([href]) {
+    *:has(> .edit-link):hover > .edit-link, *:has(> .edit-link):focus-within > .edit-link  {
         opacity: 1;
     }
 </style>
@@ -184,25 +184,17 @@
                     @if (participant.FullName is null)
                     {
                         <p><em>no name yet</em></p>
-                        <p>
-                            @participant.EmailAddress<a onclick="showEditEmail('@participant.EmailAddress', '@participant.FullName')">✏️</a>
-                        </p>
-                        <p>
-                            <small>@participant.Status.ToDisplayString()</small>
-                        </p>
                     }
                     else
                     {
-                        <p>
-                            <strong>@participant.FullName</strong>
-                        </p>
-                        <p>
-                            @participant.EmailAddress<a onclick="showEditEmail('@participant.EmailAddress', '@participant.FullName')">✏️</a>
-                        </p>
-                        <p>
-                            <small>@participant.Status.ToDisplayString()</small>
-                        </p>
+                        <p><strong>@participant.FullName</strong></p>
                     }
+                    <p>
+                        @participant.EmailAddress<a class="edit-link" onclick="showEditEmail(@JsonSerializer.Serialize(participant.EmailAddress), @JsonSerializer.Serialize(participant.FullName ?? participant.EmailAddress))">✏️</a>
+                    </p>
+                    <p>
+                        <small>@participant.Status.ToDisplayString()</small>
+                    </p>
                 </td>
                 <td>
                     @foreach (var choice in Model.Config.ProfileForm!.Choices)
@@ -217,7 +209,7 @@
                         <p>Referrer: @participant.Referrer</p>
                     }
                     <p>
-                        Admin remarks: @(participant.AdminRemarks ?? "<none>")<a onclick="showEditRemarks('@participant.EmailAddress', '@participant.FullName', @(JsonSerializer.Serialize(participant.AdminRemarks)))">✏️</a>
+                        Admin remarks: @(participant.AdminRemarks ?? "<none>")<a class="edit-link" onclick="showEditRemarks(@JsonSerializer.Serialize(participant.EmailAddress), @JsonSerializer.Serialize(participant.FullName ?? participant.EmailAddress), @JsonSerializer.Serialize(participant.AdminRemarks))">✏️</a>
                     </p>
                 </td>
                 <td>
