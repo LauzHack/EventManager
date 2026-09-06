@@ -10,6 +10,9 @@ namespace EventManager.AdminPages;
 
 public sealed class ParticipantsPage(DbValues<Participant> participants, EmailSender emailSender) : Page<Admin>
 {
+    public override bool RedisplayAfterAction
+        => true;
+
     public override async Task<PageView> ViewAsync(Admin admin)
     {
         // Do the part that can be done in a single DB query first,

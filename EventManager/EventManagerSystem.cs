@@ -154,9 +154,9 @@ public abstract class EventManagerSystem<TRequest>
                     // Before executing the new operation, we must commit so the DB state is persisted even if displaying the view fails.
                     await deps.Database.CommitAsync();
 
-                    if (user is Admin && !action.View.IsRequired)
+                    if (action.View.Page.RedisplayAfterAction)
                     {
-                        // For admin actions on non-required pages, we display the same page again, so that admins can do many operations on the same page
+                        // When needed, we display the same page again, intended so that admins can do many operations on the same page
                         // (e.g., if an admin marks a project as having demoed, they likely want to continue marking other projects)
                         result = await Operation.CreatePageView(action.View.Page)
                                                 .ExecuteAsync(user, Pages, deps);

@@ -70,7 +70,10 @@ public sealed class ParticipantsPageTests : AdminTestsBase
             await Db.CommitAsync();
         }
 
-        var result = await new ParticipantsPage(Db.Participants, EmailSender).ChangeEmailAddressAsync("alice@example.org", "bob@example.org");
+        var page = new ParticipantsPage(Db.Participants, EmailSender);
+        Assert.IsTrue(page.RedisplayAfterAction);
+
+        var result = await page.ChangeEmailAddressAsync("alice@example.org", "bob@example.org");
         await Db.CommitAsync();
         Assert.AreEqual(Status.Success, result.Status);
 

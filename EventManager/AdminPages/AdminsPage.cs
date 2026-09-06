@@ -7,6 +7,9 @@ namespace EventManager.AdminPages;
 
 public sealed class AdminsPage(DbValues<Admin> admins, EmailSender emailSender) : Page<Admin>
 {
+    public override bool RedisplayAfterAction
+        => true;
+
     public override async Task<PageView> ViewAsync(Admin admin)
     {
         if (admin.IsOwner)

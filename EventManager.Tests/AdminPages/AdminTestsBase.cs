@@ -30,6 +30,16 @@ public abstract class AdminTestsBase : TestsBase
         return result;
     }
 
+    protected async Task<Admin> CreateOtherOwnerAdminAsync()
+    {
+        var nonOwner = new Admin("owner@example.org") { IsOwner = true, IsEmailAddressVerified = true };
+        Db.Admins.Add(nonOwner);
+        await Db.CommitAsync();
+        var result = await Db.Admins.FindAsync("owner@example.org");
+        Assert.IsNotNull(result);
+        return result;
+    }
+
     protected async Task<Admin> GetAdminAsync()
         => await Db.Admins.FindAsync(AdminEmailAddress)
              ?? throw new UnreachableException();

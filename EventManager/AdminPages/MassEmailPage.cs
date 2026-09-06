@@ -10,6 +10,9 @@ namespace EventManager.AdminPages;
 
 public sealed class MassEmailPage(DbValues<Participant> participants, EmailSender emailSender) : Page<Admin>
 {
+    public override bool RedisplayAfterAction
+        => true;
+
     public override async Task<PageView> ViewAsync(Admin admin)
     {
         if (admin.IsOwner)

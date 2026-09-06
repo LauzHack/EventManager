@@ -8,6 +8,9 @@ namespace EventManager.AdminPages;
 
 public sealed class ProjectsPage(DbValues<Project> projects, EventStatus eventStatus, EventLimits eventLimits) : Page<Admin>
 {
+    public override bool RedisplayAfterAction
+        => true;
+
     public override async Task<PageView> ViewAsync(Admin admin)
     {
         if (eventLimits.ProjectTeamSize == 0)

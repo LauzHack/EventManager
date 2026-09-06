@@ -10,6 +10,9 @@ namespace EventManager.AdminPages;
 
 public sealed class ChallengesPage(DbValues<ChallengeSetter> challengeSetters, DbValues<Project> projects, EventLimits limits) : Page<Admin>
 {
+    public override bool RedisplayAfterAction
+        => true;
+
     public override async Task<PageView> ViewAsync(Admin user)
         => limits.ProjectTeamSize == 0
          ? ForbiddenView()

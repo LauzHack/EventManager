@@ -92,6 +92,7 @@ public sealed class MassEmailPageTests : AdminTestsBase
     public async Task SendToEmailAddressesWithoutApplicationLinkDeduplicatesEmailAddresses()
     {
         var page = new MassEmailPage(Db.Participants, EmailSender);
+        Assert.IsTrue(page.RedisplayAfterAction);
         var result = await page.SendToEmailAddressesAsync([
             "alice@example.org",
             "bob@example.org",
