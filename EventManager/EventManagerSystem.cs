@@ -99,6 +99,7 @@ public abstract class EventManagerSystem<TRequest>
             if (uri is null)
             {
                 // If the request is ignored by the underlying system, we're done.
+                await HandleOperationResultAsync(new OperationResult.NotFound(), request);
                 return;
             }
 
@@ -210,7 +211,7 @@ public abstract class EventManagerSystem<TRequest>
     }
 
     /// <summary>
-    /// Gets the URI of the given request, or null if the request needs no handling.
+    /// Gets the URI of the given request, or null if the request is definitely a "not found" result and should not be logged.
     /// </summary>
     protected abstract Uri? GetUri(TRequest request);
 

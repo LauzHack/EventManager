@@ -49,24 +49,25 @@ public sealed class Program
     {
         protected override Uri? GetUri(HttpContext context)
         {
-            var url = context.Request.GetEncodedUrl();
+            var path = context.Request.Path.ToString();
             // Usual stuff from crawlers
-            if (url.EndsWith("/robots.txt", StringComparison.OrdinalIgnoreCase)
+            if (path.Equals("/robots.txt", StringComparison.OrdinalIgnoreCase)
             // In case someone deliberately tries to get a 404, logging it is not helpful
-             || url.EndsWith("/404", StringComparison.OrdinalIgnoreCase)
+             || path.Equals("/404", StringComparison.OrdinalIgnoreCase)
             // even when a non-ico favicon is configured some browsers ask for this
-             || url.EndsWith("/favicon.ico", StringComparison.OrdinalIgnoreCase)
+             || path.Equals("/favicon.ico", StringComparison.OrdinalIgnoreCase)
             // iOS wants this
-             || url.EndsWith("/apple-touch-icon.png", StringComparison.OrdinalIgnoreCase)
+             || path.Equals("/apple-touch-icon.png", StringComparison.OrdinalIgnoreCase)
+             || path.Equals("/apple-touch-icon-precomposed.png", StringComparison.OrdinalIgnoreCase)
             // Azure sends requests to `/robots933456.txt` to check that the website is alive
-             || url.EndsWith("/robots933456.txt", StringComparison.OrdinalIgnoreCase)
-            // Chrome/ium dev tools ask for this on localhost 
-             || url.EndsWith("/.well-known/appspecific/com.chrome.devtools.json", StringComparison.OrdinalIgnoreCase))
+             || path.Equals("/robots933456.txt", StringComparison.OrdinalIgnoreCase)
+            // Chrome/ium dev tools ask for this on localhost
+             || path.Equals("/.well-known/appspecific/com.chrome.devtools.json", StringComparison.OrdinalIgnoreCase))
             {
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return null;
             }
 
+            var url = context.Request.GetEncodedUrl();
             // In some HTTPS setups like Azure with a custom domain name, the website thinks it's serving HTTP, but it's exposed as HTTPS.
             // So we must overwrite this; anyway, nobody should use unsecured HTTP anymore.
             if (!url.StartsWith("http", StringComparison.Ordinal))

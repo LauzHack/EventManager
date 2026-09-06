@@ -23,7 +23,7 @@ public sealed class EndToEndTests
     public async Task RequestWithNullUriIsNotHandled()
     {
         using var system = new TestEventManagerSystem();
-        await system.ExecuteRequestWithoutResponseAsync();
+        await system.ExecuteRequestAsync<OperationResult.NotFound>([], null);
 
         // It's OK if an external timer triggers the periodic tasks at this point
         await system.RunPeriodicTasksAsync();
@@ -1337,17 +1337,10 @@ file sealed class TestEventManagerSystem : EventManagerSystem<TestRequest>, IDis
     protected override Task<OperationArguments> ParseExtraArgumentsAsync(TestRequest request)
         => Task.FromResult(request.OperationArguments);
 
-    public async Task ExecuteRequestWithoutResponseAsync()
-    {
-        var request = new TestRequest([], null, OperationArguments.Empty);
-        await RunAsync(request);
-        Assert.IsFalse(_currentResults.ContainsKey(request), "HandleOperationResult not expected to be called");
-    }
-
-    public Task<OperationResult.Page> ExecuteRequestAndAssertSuccessAsync(Dictionary<string, string> storage, string relativeUri, params (string, string)[] args)
+    public Task<OperationResult.Page> ExecuteRequestAndAssertSuccessAsync(Dictionary<string, string> storage, string? relativeUri, params (string, string)[] args)
         => ExecuteRequestAndAssertSuccessAsync(storage, relativeUri, OperationArguments.FromPairs(args));
 
-    public async Task<OperationResult.Page> ExecuteRequestAndAssertSuccessAsync(Dictionary<string, string> storage, string relativeUri, OperationArguments args)
+    public async Task<OperationResult.Page> ExecuteRequestAndAssertSuccessAsync(Dictionary<string, string> storage, string? relativeUri, OperationArguments args)
     {
         var response = await ExecuteRequestAsync<OperationResult.Page>(storage, relativeUri, args);
         if (response.Status is not (Status.Success or Status.ImportantInformation or Status.None))
@@ -1357,7 +1350,7 @@ file sealed class TestEventManagerSystem : EventManagerSystem<TestRequest>, IDis
         return response;
     }
 
-    public Task<TResult> ExecuteRequestAsync<TResult>(Dictionary<string, string> storage, string relativeUri, params (string, string)[] args) where TResult : OperationResult
+    public Task<TResult> ExecuteRequestAsync<TResult>(Dictionary<string, string> storage, string? relativeUri, params (string, string)[] args) where TResult : OperationResult
         => ExecuteRequestAsync<TResult>(storage, relativeUri, OperationArguments.FromPairs(args));
 
     public async Task<TResult> ExecuteRequestAsync<TResult>(Dictionary<string, string> storage, string? relativeUri, OperationArguments? args = null) where TResult : OperationResult
