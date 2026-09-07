@@ -55,9 +55,20 @@ public sealed class GroupPage(DbValues<Participant> participants, DbValues<Appli
         }
 
         var invitee = await participants.FindAsync(emailAddress);
-        if (invitee is not null && invitee.Status is >= ParticipantStatus.Finalized or < ParticipantStatus.Created)
+        if (invitee is not null)
         {
-            return Error($"{invitee.FullName} has already gone through the application process and cannot be invited.");
+            if (invitee.Status < ParticipantStatus.Created)
+            {
+                return Error($"{invitee.FullName} has already gone through the application process and cannot be invited.");
+            }
+            if (invitee.Status is ParticipantStatus.Finalized)
+            {
+                return Error($"{invitee.FullName}'s application is already finalized and cannot be invited. If you wish to apply together, ask {invitee.GivenName} to un-finalize first.");
+            }
+            if (invitee.Status >= ParticipantStatus.Accepted)
+            {
+                return Error($"{invitee.FullName} has already been accepted and cannot be invited.");
+            }
         }
 
         var group = await groups.FirstOrDefaultAsync(g => g.Members.Contains(participant));
