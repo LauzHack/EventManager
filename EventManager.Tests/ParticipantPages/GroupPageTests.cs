@@ -325,6 +325,7 @@ public sealed class GroupPageTests : ParticipantTestsBase
     [DataRow(ParticipantStatus.DidNotConfirm)]
     [DataRow(ParticipantStatus.Finalized)]
     [DataRow(ParticipantStatus.Accepted)]
+    [DataRow(ParticipantStatus.Confirmed)]
     public async Task CannotInviteParticipantWhoAlreadyFinishedTheProcess(ParticipantStatus status)
     {
         {
@@ -334,10 +335,18 @@ public sealed class GroupPageTests : ParticipantTestsBase
             await Db.CommitAsync();
         }
 
-        var result = await new GroupPage(Db.Participants, Db.ApplicationGroups, EventLimits, EventDetails, EmailSender, DisabledTimeProvider)
-            .CreateInvitationAsync(await GetParticipantAsync(), "bob@example.org");
-
+        var page = new GroupPage(Db.Participants, Db.ApplicationGroups, EventLimits, EventDetails, EmailSender, DisabledTimeProvider);
+        var result = await page.CreateInvitationAsync(await GetParticipantAsync(), "bob@example.org");
         Assert.AreEqual(Status.UserError, result.Status);
+
+        if (status >= ParticipantStatus.Accepted)
+        {
+            Assert.Contains("already been accepted", result.Text, StringComparison.OrdinalIgnoreCase);
+        }
+        if (status is ParticipantStatus.Finalized)
+        {
+            Assert.Contains("already finalized", result.Text, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [TestMethod]
