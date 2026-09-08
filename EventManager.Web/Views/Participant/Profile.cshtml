@@ -29,10 +29,10 @@
                         }
 
                         <fieldset role="group">
-                            <input id="@choice.Name-fake"
+                            <input x-label="Other:"
+                                   id="@choice.Name-fake"
                                    type="radio"
                                    checked="@(isStandardChoice ? null : "checked")" />
-                            <p>Other:</p>
                             <input x-suggestions="@choice.CustomOptionSuggestions"
                                    id="@choice.Name-other" name="@choice.Name"
                                    type="text"
