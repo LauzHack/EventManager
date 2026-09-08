@@ -22,13 +22,13 @@
                         {
                             <input x-label="@option"
                                    name="@choice.Name"
-                                   required="@(choice.IsRequired ? "required" : null)"
+                                   required="@(choice.IsRequired && isStandardChoice ? "required" : null)"
                                    type="radio"
                                    value="@option"
                                    checked="@(participantChoice == option ? "checked" : null)" />
                         }
 
-                        <label>
+                        <label style="width:100%">
                             <input x-label="Other:"
                                    id="@choice.Name-fake"
                                    type="radio"
@@ -72,8 +72,8 @@
                 else
                 {
                     // Custom options only => textbox
-                    // (with an "Optional: " label to discourage writing "no", "-", "nothing", etc.)
-                    <input x-label="@Markdown.ToHtml(" Optional: " + choice.Description)"
+                    // (with an "Optional: " label if needed to discourage writing "no", "-", "nothing", etc.)
+                    <input x-label="@Markdown.ToHtml((choice.IsRequired ? "" : " Optional: ") + choice.Description)"
                            x-suggestions="@choice.CustomOptionSuggestions"
                            name="@choice.Name"
                            required="@(choice.IsRequired ? "required" : null)"
