@@ -28,18 +28,19 @@
                                    checked="@(participantChoice == option ? "checked" : null)" />
                         }
 
-                        <fieldset role="group">
+                        <label>
                             <input x-label="Other:"
                                    id="@choice.Name-fake"
                                    type="radio"
                                    checked="@(isStandardChoice ? null : "checked")" />
                             <input x-suggestions="@choice.CustomOptionSuggestions"
-                                   id="@choice.Name-other" name="@choice.Name"
+                                   id="@choice.Name-other"
+                                   name="@choice.Name"
                                    type="text"
                                    value="@(isStandardChoice ? null : participantChoice)"
                                    maxlength="@ProfileFormChoice.MaxCustomOptionLength"
                                    placeholder="Custom choice@(choice.CustomOptionSuggestions is [] ? "" : ", or pick among suggestions")" />
-                        </fieldset>
+                        </label>
                     </fieldset>
                     <script>
                                 (function() {
