@@ -169,8 +169,7 @@ public sealed partial class RepeatedInputTagHelper : TagHelper
                     var clone = template.content.cloneNode(true);
                     {{string.Join('\n', contentNames.Select(p => $"setFormItem(clone, '{p.Name}', {p.Id});"))}}
                     container.appendChild(clone);
-                    //setTimeout(() =>
-                    container.querySelectorAll('input, textarea, select').forEach(e => e.dispatchEvent(new Event('load')));//, 10);
+                    container.querySelectorAll('input, textarea, select').forEach(e => e.dispatchEvent(new Event('load')));
                 }
                 function delete{{id}}(elem) {
                     var container = document.getElementById('container-{{id}}');
@@ -207,7 +206,7 @@ public sealed partial class RepeatedInputTagHelper : TagHelper
         {
             true => "true",
             false => "false",
-            IEnumerable<string> strs => "'" + string.Join("\\n", strs.Select(EncodeCore)) + "'",
+            IEnumerable<string> strs => "'" + string.Join("\\n", strs.Select(s => JsonSerializer.Serialize(s)[1..^1])) + "'",
             string str => JsonSerializer.Serialize(str),
             IFormattable n => n.ToString(null, CultureInfo.InvariantCulture),
             _ => throw new ArgumentException("I don't know how to encode: " + item, nameof(item))
