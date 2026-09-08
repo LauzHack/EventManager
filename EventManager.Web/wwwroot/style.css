@@ -43,9 +43,9 @@ a[role=link] { text-decoration: none; }
     main tr:has(:nth-child(3)) td { padding: 0.5rem; }
 }
 /* Colors for logs (taken from Pico CSS's colors) */
-.info { background: #D1E5FB; }
-.error { background: #F5A390; }
-.fatal { background: #D93526; }
+.info { background: #D1E5FB; --pico-color: black; }
+.error { background: #F5A390; --pico-color: black; }
+.fatal { background: #D93526; --pico-color: black; }
 /* Hints with icons */
 .hint { display: flex; align-items: center; padding: 0.5em 0; }
 .hint p { margin: 0 0.5em 0 0; }
