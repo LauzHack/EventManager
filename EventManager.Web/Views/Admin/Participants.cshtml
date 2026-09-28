@@ -16,7 +16,8 @@
         opacity: 0;
         text-decoration: none;
     }
-    *:has(> .edit-link):hover > .edit-link, *:has(> .edit-link):focus-within > .edit-link  {
+
+    *:has(> .edit-link):hover > .edit-link, *:has(> .edit-link):focus-within > .edit-link {
         opacity: 1;
     }
 </style>
@@ -119,48 +120,56 @@
     </p>
 </section>
 
-@{
-    var acceptedParticipants = Model.Data.Where(p => p.Status >= ParticipantStatus.Accepted).ToArray();
-}
-@if (acceptedParticipants.Length > 0)
-{
-    <section>
-        <details>
-            <summary>Details on accepted participants (click to expand)</summary>
-            @foreach (var choice in Model.Config.ProfileForm!.FreeChoices)
+<section>
+    <details>
+        <summary>Summary (click to expand)</summary>
+
+        @{
+            var choices =
+                Model.Config.ProfileForm!.FreeChoices.Select<ProfileFormChoice, (string, Func<Participant, string>)>(c => (c.Name, p => p.Profile.GetValueOrDefault(c.Name, "")))
+                                                     .Append(("Referrer", p => p.Referrer ?? ""))
+                                                     .ToArray();
+        }
+
+        <p>
+            These tables show, for all profile choices and referrers, how many participants applied, how many of those finalized, and how many of those were accepted.
+            You can use this information to learn facts such as which referrers are useful and spot issues such as some categories of participants finalizing their applications at lower rates.
+        </p>
+
+        @foreach (var (name, choice) in choices)
+        {
+            var groups = Model.Data
+                .GroupBy(choice, StringComparer.OrdinalIgnoreCase)
+                .Where(g => !string.IsNullOrWhiteSpace(g.Key))
+                .OrderBy(g => g.Key);
+            if (!groups.Any())
             {
-                var groups = acceptedParticipants
-                    .GroupBy(p => p.Profile.GetValueOrDefault(choice.Name, ""), StringComparer.OrdinalIgnoreCase)
-                    .Where(g => !string.IsNullOrWhiteSpace(g.Key))
-                    .OrderBy(g => g.Key);
-                <p>
-                    @choice.Name:
-                </p>
-                <ul>
+                continue;
+            }
+            <table>
+                <thead>
+                    <tr>
+                        <th>@name</th>
+                        <th>All</th>
+                        <th>Finalized</th>
+                        <th>Accepted</th>
+                    </tr>
+                </thead>
+                <tbody>
                     @foreach (var g in groups)
                     {
-                        <li><em>@g.Key</em>: @g.Count()</li>
+                        <tr>
+                            <td>@g.Key</td>
+                            <td>@g.Count()</td>
+                            <td>@g.Count(p => p.Status >= ParticipantStatus.Finalized)</td>
+                            <td>@g.Count(p => p.Status >= ParticipantStatus.Accepted)</td>
+                        </tr>
                     }
-                </ul>
-            }
-            @{
-                var referrers = acceptedParticipants.Where(p => p.Referrer is not null).GroupBy(p => p.Referrer).ToArray();
-            }
-            @if (referrers.Any())
-            {
-                <p>
-                    Referrer:
-                </p>
-                <ul>
-                    @foreach (var r in referrers)
-                    {
-                        <li><em>@r.Key</em>: @r.Count()</li>
-                    }
-                </ul>
-            }
-        </details>
-    </section>
-}
+                </tbody>
+            </table>
+        }
+    </details>
+</section>
 
 <section>
     <script src="~/pagination.js"></script>
@@ -172,7 +181,7 @@
            id="includeNoName"
            type="checkbox"
            role="switch" />
-    <table>
+    <table id="participants">
         @foreach (var participant in Model.Data)
         {
             var search = participant.FullName
@@ -235,7 +244,7 @@
     <script>
         var noNameToggle = document.getElementById('includeNoName');
         var recompute = setupPagination({
-            root: 'table',
+            root: '#participants',
             itemsSelector: 'tr',
             pageSize: 10,
             searchSelector: '#search',
