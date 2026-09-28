@@ -17,6 +17,9 @@ public sealed class WaitForAcceptancePage(DbValues<ApplicationGroup> groups,
         _ => ForbiddenView()
     };
 
+    public override async Task<object?> GetModelAsync(Participant participant)
+        => await groups.FirstAsync(g => g.Members.Contains(participant));
+
     public async Task<StatusMessage> ConfirmAsync(Participant participant)
     {
         if (participant.Status >= ParticipantStatus.Confirmed)

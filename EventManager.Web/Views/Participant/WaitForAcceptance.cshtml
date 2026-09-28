@@ -1,4 +1,4 @@
-@model PageModel<object, Participant>
+@model PageModel<ApplicationGroup, Participant>
 
 <section>
     @if (Model.User.Status is ParticipantStatus.Finalized)
@@ -27,6 +27,9 @@
 
 <section>
     <form action="/Participant/WaitForAcceptance/Withdraw">
-        <em>If you do not want to apply anymore, you can also <button role="link" onclick="confirmAction(event, 'Are you sure you want to withdraw your application?');">withdraw</button>.</em>
+        <em>
+            If you do not want to apply anymore, you can also <button role="link" onclick="confirmAction(event, 'Are you sure you want to withdraw your application?');">withdraw</button>.
+            @(Model.Data.Members.Count > 1 ? "This will not affect others who applied with you." : "")
+        </em>
     </form>
 </section>
