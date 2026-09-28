@@ -53,6 +53,22 @@ public sealed class WaitForAcceptancePageTests : ParticipantTestsBase
     }
 
     [TestMethod]
+    public async Task ModelIsApplicationGroup()
+    {
+        {
+            var participant = await GetParticipantAsync();
+            participant.Status = ParticipantStatus.Accepted;
+            Db.ApplicationGroups.Add(new("id") { Members = { participant } });
+            await Db.CommitAsync();
+        }
+
+        var page = new WaitForAcceptancePage(Db.ApplicationGroups, EventDetails, EventLimits, DisabledEmailSender);
+        var model = await page.GetModelAsync(await GetParticipantAsync());
+        var group = Assert.IsInstanceOfType<ApplicationGroup>(model);
+        Assert.AreEqual("id", group.Id, StringComparer.Ordinal);
+    }
+
+    [TestMethod]
     public async Task ConfirmSetsStatusOfAcceptedParticipant()
     {
         {
