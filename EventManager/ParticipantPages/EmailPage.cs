@@ -111,7 +111,7 @@ public sealed class EmailPage(DbValues<Participant> participants, DbValues<Appli
         // and delete the old account.
         participants.Remove(oldEmailAddressOwner);
 
-        if (participant.Status == ParticipantStatus.Created)
+        if (participant.Status is ParticipantStatus.Created)
         {
             var group = await groups.FirstOrDefaultAsync(g => g.Members.Contains(oldEmailAddressOwner));
             if (group is not null)
