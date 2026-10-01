@@ -224,6 +224,9 @@ public sealed class AcceptancePage(DbValues<Participant> participants, DbValues<
 
     private Task RejectAsync(IReadOnlyCollection<Participant> toReject)
     {
+        // if a participant was created but didn't verify their email, don't send them one, we don't know if the email address is even valid
+        var emailRecipients = toReject.Where(p => p.Status is not ParticipantStatus.Created).Select(p => p.EmailAddress).ToArray();
+
         foreach (var participant in toReject)
         {
             participant.Status = ParticipantStatus.Rejected;
@@ -236,7 +239,7 @@ public sealed class AcceptancePage(DbValues<Participant> participants, DbValues<
                 + "Please do not write to us asking if you can participate anyway. We have already accepted more people than we can host because we know some people will cancel.\n\n"
                 + "_(If you had started an application with this email address, then switched to a different email address for your final application which was accepted, "
                 + "as long as you have received an email confirming your participation, you're fine)_",
-            recipients: [.. toReject.Select(p => p.EmailAddress)]
+            recipients: emailRecipients
         );
     }
 }

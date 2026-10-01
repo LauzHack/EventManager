@@ -54,7 +54,7 @@ public sealed class BackupPage(Db db, EventDetails eventDetails, ProfileForm pro
 
         foreach (var (index, participant) in OrderParticipants(participants))
         {
-            if (participant.Status == ParticipantStatus.Created)
+            if (participant.Status is ParticipantStatus.Created)
             {
                 // Ignore participants who haven't confirmed their email address yet
                 continue;

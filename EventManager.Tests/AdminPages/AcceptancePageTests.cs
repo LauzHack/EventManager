@@ -843,6 +843,13 @@ public sealed class AcceptancePageTests : AdminTestsBase
             AddParticipantGroup(
                 new Participant("alice@example.org") { Status = ParticipantStatus.Finalized }
             );
+            AddParticipantGroup(
+                new Participant("bob@example.org") { Status = ParticipantStatus.EmailAddressVerified }
+            );
+            // the mail server might not like that one, which hasn't been verified because it's blatantly invalid
+            AddParticipantGroup(
+                new Participant("invalid-email") { Status = ParticipantStatus.Created }
+            );
             await Db.CommitAsync();
         }
 
@@ -851,10 +858,11 @@ public sealed class AcceptancePageTests : AdminTestsBase
         var result = await page.CloseAsync(await GetAdminAsync());
 
         Assert.AreEqual(Status.Success, result.Status);
-        var email = Assert.ContainsSingle(EmailSender.Outbox);
-        Assert.AreEqual("alice@example.org", email.Recipient);
+        Assert.HasCount(2, EmailSender.Outbox);
+        Assert.AreEqual("alice@example.org", EmailSender.Outbox[0].Recipient);
+        Assert.AreEqual("bob@example.org", EmailSender.Outbox[1].Recipient);
         // Avoids confusion when the same org has multiple events around the same time
-        Assert.Contains(EventDetails.ToString(), email.Body, StringComparison.Ordinal);
+        Assert.Contains(EventDetails.ToString(), EmailSender.Outbox[0].Body, StringComparison.Ordinal);
     }
 
     [TestMethod]
