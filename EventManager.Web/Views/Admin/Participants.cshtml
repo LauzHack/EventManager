@@ -120,17 +120,16 @@
     </p>
 </section>
 
-<section>
-    <details>
-        <summary>Summary (click to expand)</summary>
-
-        @{
-            var choices =
-                Model.Config.ProfileForm!.FreeChoices.Select<ProfileFormChoice, (string, Func<Participant, string>)>(c => (c.Name, p => p.Profile.GetValueOrDefault(c.Name, "")))
-                                                     .Append(("Referrer", p => p.Referrer ?? ""))
-                                                     .ToArray();
-        }
-
+@{
+    var choices =
+        Model.Config.ProfileForm!.FreeChoices.Select<ProfileFormChoice, (string, Func<Participant, string>)>(c => (c.Name, p => p.Profile.GetValueOrDefault(c.Name, "")))
+                                             .Append(("Referrer", p => p.Referrer ?? ""))
+                                             .ToArray();
+}
+@if (choices.Length > 0)
+{
+    <section>
+        <h2>Summaries</h2>
         <p>
             These tables show, for all profile choices and referrers, how many participants applied, how many of those finalized, and how many of those were accepted.
             You can use this information to learn facts such as which referrers are useful and spot issues such as some categories of participants finalizing their applications at lower rates.
@@ -139,37 +138,42 @@
         @foreach (var (name, choice) in choices)
         {
             var groups = Model.Data
-                .GroupBy(choice, StringComparer.OrdinalIgnoreCase)
-                .Where(g => !string.IsNullOrWhiteSpace(g.Key))
-                .OrderBy(g => g.Key);
+                              .GroupBy(choice, StringComparer.OrdinalIgnoreCase)
+                              .Where(g => !string.IsNullOrWhiteSpace(g.Key))
+                              .OrderBy(g => g.Key);
             if (!groups.Any())
             {
                 continue;
             }
-            <table>
-                <thead>
-                    <tr>
-                        <th>@name</th>
-                        <th>All</th>
-                        <th>Finalized</th>
-                        <th>Accepted</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var g in groups)
-                    {
+
+            <details>
+                <summary><strong>@name</strong> <em>(click to expand)</em></summary>
+
+                <table>
+                    <thead>
                         <tr>
-                            <td>@g.Key</td>
-                            <td>@g.Count()</td>
-                            <td>@g.Count(p => p.Status >= ParticipantStatus.Finalized)</td>
-                            <td>@g.Count(p => p.Status >= ParticipantStatus.Accepted)</td>
+                            <th></th>
+                            <th>All</th>
+                            <th>Finalized</th>
+                            <th>Accepted</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var g in groups)
+                        {
+                            <tr>
+                                <td>@g.Key</td>
+                                <td>@g.Count()</td>
+                                <td>@g.Count(p => p.Status >= ParticipantStatus.Finalized)</td>
+                                <td>@g.Count(p => p.Status >= ParticipantStatus.Accepted)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </details>
         }
-    </details>
-</section>
+    </section>
+}
 
 <section>
     <script src="~/pagination.js"></script>
