@@ -87,9 +87,9 @@ public sealed class AuthenticatorTests
 
         var opWithUser1 = Authenticator.AddAuthentication(_secret, Operation.CreatePageView<TestUser>(), user1.Id);
 
-        // very ugly but we want to simulate an attack where the attacker knows the implementation details
-        string idKey = (string)typeof(Authenticator).GetRequiredMethod("IdKey").Invoke(null, [typeof(TestUser)])!;
-        string hashedIdKey = (string)typeof(Authenticator).GetRequiredMethod("HashedIdKey").Invoke(null, [typeof(TestUser)])!;
+        // we want to simulate an attack where the attacker knows the implementation details
+        string idKey = Authenticator.IdKey(typeof(TestUser));
+        string hashedIdKey = Authenticator.HashedIdKey(typeof(TestUser));
 
         Assert.IsTrue(opWithUser1.Arguments.TryGetText(hashedIdKey, out var hash));
         Assert.IsNotNull(Authenticator.LogUserIn(_secret, opWithUser1, storage));
@@ -100,6 +100,28 @@ public sealed class AuthenticatorTests
 
         Assert.IsNull(Authenticator.LogUserIn(_secret, attemptedOpWithUser2, storage));
         Assert.IsNull(Authenticator.LogUserIn(_secret, Operation.CreatePageView<TestUser2>() with { Arguments = opWithUser1.Arguments }, storage));
+    }
+
+    [TestMethod]
+    public void LogInReturnsNullForNonsenseToken()
+    {
+        var user = new TestUser("user@example.org");
+        var storage = new FakeClientSideStorage();
+
+        var opWithUser = Authenticator.AddAuthentication(_secret, Operation.CreatePageView<TestUser>(), user.Id);
+
+        // we want to simulate a problem where the attacker
+        string idKey = Authenticator.IdKey(typeof(TestUser));
+        string hashedIdKey = Authenticator.HashedIdKey(typeof(TestUser));
+
+        Assert.IsTrue(opWithUser.Arguments.TryGetText(hashedIdKey, out var hash));
+        Assert.IsNotNull(Authenticator.LogUserIn(_secret, opWithUser, storage));
+
+        var attemptedOp = Operation.CreatePageView<TestUser>()
+                                   .WithExtraTextArgument(idKey, user.Id)
+                                   .WithExtraTextArgument(hashedIdKey, hash + "-nonsense-hash");
+
+        Assert.IsNull(Authenticator.LogUserIn(_secret, attemptedOp, storage));
     }
 
     private sealed class TestUser(string id) : User
