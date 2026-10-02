@@ -50,6 +50,8 @@ public sealed class EmailSetupPage(Db database,
             authSecret.Set(newSecret);
         }
 
+        emailSettings.Set(settings);
+
         try
         {
             var email = new Email(
@@ -60,7 +62,6 @@ public sealed class EmailSetupPage(Db database,
                 OperationDescription: "Log in"
             );
             await emailSender.SendAsync([email], settings, newSecret);
-            emailSettings.Set(settings);
         }
         catch (Exception e)
         {

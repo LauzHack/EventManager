@@ -107,6 +107,34 @@ public sealed class EndToEndTests
     }
 
     [TestMethod]
+    public async Task CrashWhenSendingEmailForSetupDoesNotSaveValues()
+    {
+        var adminStorage = new Dictionary<string, string>();
+        using var system = new TestEventManagerSystem
+        {
+            UseCrashyEmailSender = true
+        };
+
+        var result = await system.ExecuteRequestAsync<OperationResult.Page>(
+            adminStorage, "/Admin/EmailSetup/Edit",
+            ("adminEmailAddress", "admin@example.org"),
+            ("settings.Uri", "https://mail.example.org/"),
+            ("settings.UserName", "email-sender"),
+            ("settings.Password", "email-password"),
+            ("settings.SenderName", "email-sender-name"),
+            ("settings.SenderAddress", "sender@example.org"),
+            ("settings.ReplyToAddress", "replyto@example.org")
+        );
+        Assert.AreEqual(Status.UserError, result.Status);
+
+        var slashResult = await system.ExecuteRequestAndAssertSuccessAsync(adminStorage, "/");
+        Assert.IsInstanceOfType<EmailSetupPage>(slashResult.View.Page);
+
+        var config = slashResult.Configuration;
+        Assert.IsNull(config.EmailSenderSettings);
+    }
+
+    [TestMethod]
     public async Task AdminConfig()
     {
         var adminStorage = new Dictionary<string, string>();
@@ -991,7 +1019,7 @@ public sealed class EndToEndTests
         using var system = new TestEventManagerSystem();
         await CommonOperations.BasicAdminConfigAsync(system, storage, openApplications: false);
 
-        var error = await system.ExecuteRequestAsync<OperationResult.UserError>(
+        var error = await system.ExecuteRequestAsync<OperationResult.BadRequest>(
             storage, "/Admin/Backup/Import",
             OperationArguments.Empty.WithFile("backup", new File.InMemory("fake.backup", "application/octet-stream", []))
         );
@@ -1009,10 +1037,10 @@ public sealed class EndToEndTests
             storage, "/Admin/Backup/Import",
             OperationArguments.Empty.WithFile("backup", new File.InMemory("fake.backup", "application/octet-stream", new byte[File.MaxSizeInBytes + 1]))
         );
-        if (error is OperationResult.UserError ue)
+        if (error is OperationResult.BadRequest br)
         {
             // not a valid backup, but should not fail for oversized reasons; code coverage will tell us if this doesn't cover what it's intended to
-            Assert.DoesNotContain("oversized", ue.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("oversized", br.Message, StringComparison.OrdinalIgnoreCase);
         }
         else
         {
@@ -1029,7 +1057,7 @@ public sealed class EndToEndTests
         await CommonOperations.BasicAdminConfigAsync(system, adminStorage, openApplications: true);
         await CommonOperations.BasicParticipantApplicationAsync(system, adminStorage, participantStorage, stopAfterName: true);
 
-        var error = await system.ExecuteRequestAsync<OperationResult.UserError>(
+        var error = await system.ExecuteRequestAsync<OperationResult.BadRequest>(
              participantStorage, "/Participant/Profile/Edit",
              OperationArguments.FromPairs(
                  ("Choice One", "B"),
@@ -1164,7 +1192,7 @@ file static class CommonOperations
         await system.ExecuteRequestAsync<OperationResult.Unavailable>(participantStorage, "/Participant/WaitForAcceptance/Confirm");
 
         // The participant has no family name but forgets to set the family name field to the required placeholder, which is an error
-        await system.ExecuteRequestAsync<OperationResult.UserError>(
+        await system.ExecuteRequestAsync<OperationResult.BadRequest>(
             participantStorage, "/Participant/Name/Edit",
             ("givenName", givenName)
         );
@@ -1262,6 +1290,7 @@ file sealed class TestEventManagerSystem : EventManagerSystem<TestRequest>, IDis
     public bool CrashWhenCreatingTimeProvider { get; set; }
 
     public bool UseCrashyDatabase { get; set; }
+    public bool UseCrashyEmailSender { get; set; }
 
     protected override bool ShouldLogException(Exception e)
         => base.ShouldLogException(e) && e is not TestIgnoredException;
@@ -1295,6 +1324,10 @@ file sealed class TestEventManagerSystem : EventManagerSystem<TestRequest>, IDis
         if (CrashWhenCreatingEmailSenderWithOperationCanceledException)
         {
             throw new OperationCanceledException();
+        }
+        if (UseCrashyEmailSender)
+        {
+            return new CrashyEmailSender();
         }
         return new TestEmailSender(_outbox, config.EmailSenderSettings, config.AuthenticationSecret);
     }
@@ -1426,6 +1459,15 @@ file sealed class TestEmailSender(Queue<(Email, EmailSenderSettings, Authenticat
             outbox.Enqueue((new Email(recipient, subject, body, operation, operationDescription), settings, authSecret));
         }
     }
+}
+
+file sealed class CrashyEmailSender : EmailSender
+{
+    public override Task SendAsync(IReadOnlyCollection<Email> emails, EmailSenderSettings? overrideSettings = null, AuthenticationSecret? overrideSecret = null)
+        => throw new NotSupportedException();
+
+    public override Task SendCopyAsync(string subject, string body, IReadOnlyCollection<string> recipients, Operation? operation = null, string? operationDescription = null)
+        => throw new NotSupportedException();
 }
 
 file sealed class CrashyDatabase(Db wrapped) : Db

@@ -152,8 +152,15 @@ public abstract class EventManagerSystem<TRequest>
                 // (this is where we'd short-circuit if we had a "request but don't display a new view" mode, e.g., if the frontend wanted to call the backend via JS)
                 if (result is OperationResult.Action action)
                 {
-                    // Before executing the new operation, we must commit so the DB state is persisted even if displaying the view fails.
-                    await deps.Database.CommitAsync();
+                    // Before executing the new operation, we must commit or rollback so the DB state is correct even if displaying the view fails.
+                    if (result.Status is Status.UserError or Status.SystemError)
+                    {
+                        deps.Database.CancelChanges();
+                    }
+                    else
+                    {
+                        await deps.Database.CommitAsync();
+                    }
 
                     if (action.View.Page.RedisplayAfterAction)
                     {

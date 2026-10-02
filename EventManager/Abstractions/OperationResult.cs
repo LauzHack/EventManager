@@ -82,9 +82,9 @@ public abstract record OperationResult(Status Status, string Message)
         : OperationResult(Status.UserError, "Attempt to access a nonexistent page.");
 
     /// <summary>
-    /// Something went wrong, and the user can do something about it.
+    /// The user sent an invalid request.
     /// </summary>
-    public sealed record UserError(string Message)
+    public sealed record BadRequest(string Message)
         : OperationResult(Status.UserError, "Bad request: " + Message);
 
     /// <summary>

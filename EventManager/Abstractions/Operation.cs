@@ -379,7 +379,7 @@ file sealed record PageActionOperation(Type UserType, string PageName, string Me
         // Empty files are always disallowed, and oversized files are only allowed for admins so that restoring a backup works regardless of the backup size
         if (Arguments.HasEmptyFiles || (Arguments.HasOversizedFiles && UserType != typeof(Admin)))
         {
-            return new OperationResult.UserError("Attempt to upload empty or oversized files");
+            return new OperationResult.BadRequest("Attempt to upload empty or oversized files");
         }
 
         var (current, _) = await GetWithPreviousViewsAsync(user, pages, dependencies, PageName);
@@ -411,7 +411,7 @@ file sealed record PageActionOperation(Type UserType, string PageName, string Me
         }
         catch (InvalidOperationException e)
         {
-            return new OperationResult.UserError(e.Message);
+            return new OperationResult.BadRequest(e.Message);
         }
     }
 }
