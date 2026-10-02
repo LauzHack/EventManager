@@ -152,9 +152,9 @@ public sealed class Program
                     context.Response.StatusCode = StatusCodes.Status404NotFound;
                     return RazorRenderer.RenderAsync("NotFound", _ => null, context);
 
-                case OperationResult.UserError(var description):
+                case OperationResult.BadRequest(var description):
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    return RazorRenderer.RenderAsync("UserError", _ => description, context);
+                    return RazorRenderer.RenderAsync("BadRequest", _ => description, context);
 
                 case OperationResult.SystemError(var description):
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;

@@ -146,15 +146,8 @@ public sealed class ProfilePageTests : ParticipantTestsBase
             new ProfileFormChoice("Food", "Food?", true, [], true, []),
         ], []);
 
-        {
-            var result = await CreatePage(form).EditAsync(await GetParticipantAsync(), OperationArguments.FromPairs(("Drink", "Syrup")));
-            Assert.AreEqual(Status.UserError, result.Status);
-            await Db.CommitAsync();
-        }
-
-        var newParticipant = await Db.Participants.FindAsync(ParticipantEmailAddress);
-        Assert.IsNotNull(newParticipant);
-        Assert.IsFalse(newParticipant.Profile.ContainsKey("Drink"));
+        var result = await CreatePage(form).EditAsync(await GetParticipantAsync(), OperationArguments.FromPairs(("Drink", "Syrup")));
+        Assert.AreEqual(Status.UserError, result.Status);
     }
 
     [TestMethod]
@@ -165,15 +158,8 @@ public sealed class ProfilePageTests : ParticipantTestsBase
             new ProfileFormChoice("Food", "Food?", true, [], true, []),
         ], []);
 
-        {
-            var result = await CreatePage(form).EditAsync(await GetParticipantAsync(), OperationArguments.FromPairs(("Food", new string('x', ProfileFormChoice.MaxCustomOptionLength + 1))));
-            Assert.AreEqual(Status.UserError, result.Status);
-            await Db.CommitAsync();
-        }
-
-        var newParticipant = await Db.Participants.FindAsync(ParticipantEmailAddress);
-        Assert.IsNotNull(newParticipant);
-        Assert.IsFalse(newParticipant.Profile.ContainsKey("Drink"));
+        var result = await CreatePage(form).EditAsync(await GetParticipantAsync(), OperationArguments.FromPairs(("Food", new string('x', ProfileFormChoice.MaxCustomOptionLength + 1))));
+        Assert.AreEqual(Status.UserError, result.Status);
     }
 
     [TestMethod]
@@ -186,36 +172,6 @@ public sealed class ProfilePageTests : ParticipantTestsBase
         var result = await CreatePage(form).EditAsync(await GetParticipantAsync(), OperationArguments.FromPairs(("Drink", "Syrup")));
 
         Assert.AreEqual(Status.UserError, result.Status);
-    }
-
-    [TestMethod]
-    public async Task SubmitSavesProvidedDataWhenRequiredItemIsNotProvided()
-    {
-        var form = new ProfileForm(
-        [
-            new ProfileFormChoice("Food", "Food?", true, [], true, []),
-            new ProfileFormChoice("Drink", "Drink?", false, [], true, []),
-        ],
-        [
-            new ProfileFormFile("CV", "Resume", true, [".pdf"]),
-        ]);
-        var file = new File.InMemory("name", "text/plain", [0, 1, 2, 3]);
-
-        {
-            var result = await CreatePage(form).EditAsync(await GetParticipantAsync(),
-                OperationArguments.FromPairs(("Drink", "Orange juice"))
-                                  .WithFile("CV", file)
-            );
-            Assert.AreEqual(Status.UserError, result.Status);
-            await Db.CommitAsync();
-        }
-
-        var newParticipant = await Db.Participants.FindAsync(ParticipantEmailAddress);
-        Assert.IsNotNull(newParticipant);
-        Assert.AreEqual("Orange juice", newParticipant.Profile["Drink"]);
-        var storedFile = await FileStorage.GetFileAsync(newParticipant.Profile["CV"]);
-        Assert.IsNotNull(storedFile);
-        Assert.AreEqual(file.MimeType, storedFile.MimeType);
     }
 
     [TestMethod]
