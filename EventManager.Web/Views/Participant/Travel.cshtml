@@ -68,7 +68,8 @@
         </form>
     </section>
 
-    if (Model.User.TravelReimbursementTier is not null)
+    @* Do not show the submission for a tier with amount 0, it confuses some participants *@
+    if (Model.User.TravelReimbursementTier is string tier && Model.Config.TravelReimbursementPolicy.Tiers.TryGetValue(tier, out var tierAmount) && tierAmount != 0)
     {
         <section>
             <h2>Submit a travel expense</h2>
