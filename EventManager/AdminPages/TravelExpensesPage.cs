@@ -43,15 +43,7 @@ public sealed class TravelExpensesPage(DbValues<Participant> participants, DbVal
                               [.. e.Owners.Select(o => new OwnerInfo(o.FullName, o.TravelReimbursementTier))],
                               [.. allExpenses.Where(e2 => e2 != e && e2.Owners.Intersect(e.Owners).Any())
                                              .OrderByDescending(e2 => e2.Status)
-                                             .ThenBy(e2 => e2.CreationDate)
-                                             .Select(e2 => new ExpenseInfo(
-                                                               e2.Description,
-                                                               e2.Amount,
-                                                               e2.CurrencyCode,
-                                                               e2.CountsDouble,
-                                                               [.. e2.Owners.Select(o2 => o2.FullName)],
-                                                               e2.Status
-                                             ))],
+                                             .ThenBy(e2 => e2.CreationDate)],
                               e.Status
                           ))
                           .ToArray();
@@ -248,15 +240,6 @@ public sealed class TravelExpensesPage(DbValues<Participant> participants, DbVal
         string? ReimbursementTier
     );
 
-    public sealed record ExpenseInfo(
-        string Description,
-        decimal Amount,
-        string CurrencyCode,
-        bool CountsDouble,
-        IReadOnlyCollection<string?> OwnerNames,
-        TravelExpenseStatus Status
-    );
-
     public sealed record ExpenseWithContext(
         string ReceiptId,
         string Description,
@@ -265,7 +248,7 @@ public sealed class TravelExpensesPage(DbValues<Participant> participants, DbVal
         decimal? CurrencyExchangeRate,
         bool CountsDouble,
         IReadOnlyCollection<OwnerInfo> Owners,
-        IReadOnlyCollection<ExpenseInfo> OwnerExpenses,
+        IReadOnlyCollection<TravelExpense> OwnerExpenses,
         TravelExpenseStatus Status
     );
 }
