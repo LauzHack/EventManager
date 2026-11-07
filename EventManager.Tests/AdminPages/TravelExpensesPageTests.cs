@@ -83,18 +83,20 @@ public sealed class TravelExpensesPageTests : AdminTestsBase
         Assert.AreEqual(TravelExpenseStatus.Submitted, actual2.Status);
         // sorted here too, but approved first
         var sub21 = actual2.OwnerExpenses.ElementAt(0);
+        Assert.AreEqual("id1", sub21.ReceiptId);
         Assert.AreEqual("Descr 1", sub21.Description);
         Assert.AreEqual(42m, sub21.Amount);
         Assert.AreEqual("CHF", sub21.CurrencyCode);
         Assert.IsFalse(sub21.CountsDouble);
-        Assert.AreSequenceEqual(["Alice Apple"], sub21.OwnerNames);
+        Assert.AreSequenceEqual(["Alice Apple"], sub21.Owners.Select(o => o.FullName));
         Assert.AreEqual(TravelExpenseStatus.Approved, sub21.Status);
         var sub20 = actual2.OwnerExpenses.ElementAt(1);
+        Assert.AreEqual("id0", sub20.ReceiptId);
         Assert.AreEqual("Descr 0", sub20.Description);
         Assert.AreEqual(3m, sub20.Amount);
         Assert.AreEqual("CHF", sub20.CurrencyCode);
         Assert.IsFalse(sub20.CountsDouble);
-        Assert.AreSequenceEqual(["Alice Apple"], sub20.OwnerNames);
+        Assert.AreSequenceEqual(["Alice Apple"], sub20.Owners.Select(o => o.FullName));
         Assert.AreEqual(TravelExpenseStatus.Submitted, sub20.Status);
 
         var actual0 = typed.ElementAt(1);
@@ -109,18 +111,20 @@ public sealed class TravelExpensesPageTests : AdminTestsBase
         Assert.HasCount(2, actual0.OwnerExpenses);
         Assert.AreEqual(TravelExpenseStatus.Submitted, actual0.Status);
         var sub01 = actual0.OwnerExpenses.ElementAt(0);
+        Assert.AreEqual("id1", sub01.ReceiptId);
         Assert.AreEqual("Descr 1", sub01.Description);
         Assert.AreEqual(42m, sub01.Amount);
         Assert.AreEqual("CHF", sub01.CurrencyCode);
         Assert.IsFalse(sub01.CountsDouble);
-        Assert.AreSequenceEqual(["Alice Apple"], sub01.OwnerNames);
+        Assert.AreSequenceEqual(["Alice Apple"], sub01.Owners.Select(o => o.FullName));
         Assert.AreEqual(TravelExpenseStatus.Approved, sub01.Status);
         var sub02 = actual0.OwnerExpenses.ElementAt(1);
+        Assert.AreEqual("id2", sub02.ReceiptId);
         Assert.AreEqual("Descr 2", sub02.Description);
         Assert.AreEqual(10m, sub02.Amount);
         Assert.AreEqual("EUR", sub02.CurrencyCode);
         Assert.IsTrue(sub02.CountsDouble);
-        Assert.AreSequenceEqual(["Alice Apple", "Bob Banana"], sub02.OwnerNames);
+        Assert.AreSequenceEqual(["Alice Apple", "Bob Banana"], sub02.Owners.Select(o => o.FullName));
         Assert.AreEqual(TravelExpenseStatus.Submitted, sub02.Status);
 
         var actual1 = typed.ElementAt(2);
@@ -136,18 +140,20 @@ public sealed class TravelExpensesPageTests : AdminTestsBase
         Assert.AreEqual(TravelExpenseStatus.Approved, actual1.Status);
         // sorted by time ascending
         var sub12 = actual1.OwnerExpenses.ElementAt(0);
+        Assert.AreEqual("id2", sub12.ReceiptId);
         Assert.AreEqual("Descr 2", sub12.Description);
         Assert.AreEqual(10m, sub12.Amount);
         Assert.AreEqual("EUR", sub12.CurrencyCode);
         Assert.IsTrue(sub12.CountsDouble);
-        Assert.AreSequenceEqual(["Alice Apple", "Bob Banana"], sub12.OwnerNames);
+        Assert.AreSequenceEqual(["Alice Apple", "Bob Banana"], sub12.Owners.Select(o => o.FullName));
         Assert.AreEqual(TravelExpenseStatus.Submitted, sub12.Status);
         var sub10 = actual1.OwnerExpenses.ElementAt(1);
+        Assert.AreEqual("id0", sub10.ReceiptId);
         Assert.AreEqual("Descr 0", sub10.Description);
         Assert.AreEqual(3m, sub10.Amount);
         Assert.AreEqual("CHF", sub10.CurrencyCode);
         Assert.IsFalse(sub10.CountsDouble);
-        Assert.AreSequenceEqual(["Alice Apple"], sub10.OwnerNames);
+        Assert.AreSequenceEqual(["Alice Apple"], sub10.Owners.Select(o => o.FullName));
         Assert.AreEqual(TravelExpenseStatus.Submitted, sub10.Status);
     }
 

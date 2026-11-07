@@ -54,7 +54,7 @@
             <ul>
                 @foreach (var other in expense.OwnerExpenses)
                 {
-                    <li>@StatusText(other.Status): @other.Description (@other.CurrencyCode @other.Amount) @(other.CountsDouble ? "×2" : "") for @string.Join(", ", other.OwnerNames)</li>
+                    <li>@StatusText(other.Status): @other.Description (@other.CurrencyCode @other.Amount) @(other.CountsDouble ? "×2" : "") for @string.Join(", ", other.Owners.Select(o => o.FullName)) (<a href="/File/@other.ReceiptId" download>view receipt</a>)</li>
                 }
             </ul>
         }
