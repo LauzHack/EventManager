@@ -79,7 +79,7 @@ public abstract record OperationResult(Status Status, string Message)
     /// The user attempted to interact with the system in an unknown manner.
     /// </summary>
     public sealed record NotFound()
-        : OperationResult(Status.UserError, "Attempt to access a nonexistent page.");
+        : OperationResult(Status.UnknownPath, "Attempt to access a nonexistent page.");
 
     /// <summary>
     /// The user sent an invalid request.

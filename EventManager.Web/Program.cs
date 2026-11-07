@@ -15,8 +15,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
-using MimeKit;
-
 namespace EventManager.Web;
 
 public sealed class Program
@@ -56,13 +54,10 @@ public sealed class Program
              || path.Equals("/404", StringComparison.OrdinalIgnoreCase)
             // even when a non-ico favicon is configured some browsers ask for this
              || path.Equals("/favicon.ico", StringComparison.OrdinalIgnoreCase)
-            // iOS wants this
-             || path.Equals("/apple-touch-icon.png", StringComparison.OrdinalIgnoreCase)
-             || path.Equals("/apple-touch-icon-precomposed.png", StringComparison.OrdinalIgnoreCase)
+            // iOS looks up many paths starting with this prefix
+             || path.StartsWith("/apple-touch-icon", StringComparison.OrdinalIgnoreCase)
             // Azure sends requests to `/robots933456.txt` to check that the website is alive
-             || path.Equals("/robots933456.txt", StringComparison.OrdinalIgnoreCase)
-            // Chrome/ium dev tools ask for this on localhost
-             || path.Equals("/.well-known/appspecific/com.chrome.devtools.json", StringComparison.OrdinalIgnoreCase))
+             || path.Equals("/robots933456.txt", StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }

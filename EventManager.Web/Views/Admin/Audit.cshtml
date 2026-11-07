@@ -2,7 +2,7 @@
 
 @* Custom background colors for these rows, errors are fine because it's users screwing up, but fatal is very bad (from Pico.CSS's colors) *@
 <style>
-    .error td { background: #FAEEEB; border-top: 1px solid #F8DCD6; border-bottom: 1px solid #F8DCD6; }
+    .error td, .unknown td { background: #FAEEEB; border-top: 1px solid #F8DCD6; border-bottom: 1px solid #F8DCD6; }
     .fatal td { background: #D93526; border-top: 1px solid #C52F21; border-bottom: 1px solid #C52F21; }
 </style>
 
@@ -39,6 +39,12 @@
                    class="audit-status"
                    value="error"
                    checked />
+            <input x-label="Unknown pages"
+                   type="checkbox"
+                   role="switch"
+                   class="audit-status"
+                   value="unknown"
+                   checked />
             <input x-label="System errors"
                    type="checkbox"
                    role="switch"
@@ -53,6 +59,7 @@
                 {
                     Status.SystemError => "fatal",
                     Status.UserError => "error",
+                    Status.UnknownPath => "unknown",
                     _ => "info",
                 };
                 var dateText = message.DateTime.ToOffset(timeZone.GetUtcOffset(message.DateTime)).ToString("G");

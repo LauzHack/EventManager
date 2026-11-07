@@ -6,6 +6,12 @@ namespace EventManager.Abstractions;
 public enum Status
 {
     /// <summary>
+    /// A request was made to an unknown path.
+    /// (This is stored explicitly because publicly-accessible systems get a *lot* of those so it's worth displaying them separately)
+    /// </summary>
+    UnknownPath = -1,
+
+    /// <summary>
     /// Nothing happened.
     /// For instance, an idempotent action was performed a second time.
     /// </summary>
