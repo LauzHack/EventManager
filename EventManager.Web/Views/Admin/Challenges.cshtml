@@ -120,4 +120,26 @@
             </ul>
         }
     </section>
+
+    <section>
+        <h2>Challenges preview</h2>
+        <p>
+            You can preview all challenges here, even if they are not yet visible to participants.
+        </p>
+        <details>
+            <summary>Preview (click to expand)</summary>
+            @foreach (var setterAndProjects in Model.Data)
+            {
+                <h3>@setterAndProjects.ChallengeSetter.Name</h3>
+                @if (setterAndProjects.ChallengeSetter.Description is null)
+                {
+                    <p><em>Not set yet.</em></p>
+                }
+                else
+                {
+                    @Html.Raw(Markdown.ToHtml(setterAndProjects.ChallengeSetter.Description))
+                }
+            }
+        </details>
+    </section>
 }
