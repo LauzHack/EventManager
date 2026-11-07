@@ -42,7 +42,7 @@ a[role=link] { text-decoration: none; }
     main tr:has(:nth-child(3)) { margin-bottom: 1rem; border: 1px solid var(--pico-muted-color); }
     main tr:has(:nth-child(3)) td { padding: 0.5rem; }
 }
-/* Colors for logs (taken from Pico CSS's colors) */
+/* Colors for messages (taken from Pico CSS's colors) */
 .info { background: #D1E5FB; --pico-color: black; }
 .error { background: #F5A390; --pico-color: black; }
 .fatal { background: #D93526; --pico-color: black; }
