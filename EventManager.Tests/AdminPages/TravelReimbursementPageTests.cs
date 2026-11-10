@@ -17,7 +17,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
     [TestMethod]
     public async Task PageIsHiddenWhenReimbursementIsNotEnabled()
     {
-        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, null);
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, null);
         var result = await page.ViewAsync(await GetAdminAsync());
         Assert.IsFalse(result.IsInteractable);
     }
@@ -25,7 +25,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
     [TestMethod]
     public async Task PageIsEditableWhenReimbursementIsEnabled()
     {
-        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
         var result = await page.ViewAsync(await GetAdminAsync());
         Assert.IsFalse(result.IsRequired);
         Assert.IsTrue(result.IsInteractable);
@@ -68,7 +68,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
             await Db.CommitAsync();
         }
 
-        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
         var model = await page.GetModelAsync(await GetAdminAsync());
 
         var reimbursements = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(model).Reimbursements;
@@ -105,7 +105,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
             await Db.CommitAsync();
         }
 
-        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
         var model = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(await page.GetModelAsync(await GetAdminAsync()));
 
         Assert.IsEmpty(model.Reimbursements);
@@ -133,7 +133,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
             await Db.CommitAsync();
         }
 
-        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
         var model = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(await page.GetModelAsync(await GetAdminAsync()));
 
         Assert.IsEmpty(model.Reimbursements);
@@ -182,7 +182,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
         }
 
         var policy = new TravelReimbursementPolicy("CHF", "Descr", new("https://example.org"), ImmutableDictionary.CreateRange<string, decimal>([new("A", 10), new("B", 20)]), 3);
-        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, policy);
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, policy);
         var model = await page.GetModelAsync(await GetAdminAsync());
 
         var reimbursements = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(model).Reimbursements;
@@ -227,7 +227,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
             await Db.CommitAsync();
         }
 
-        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, mode == 3 ? null : ReimbursementPolicy);
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, mode == 3 ? null : ReimbursementPolicy);
         var model = await page.GetModelAsync(await GetAdminAsync());
 
         var reimbursements = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(model).Reimbursements;
@@ -235,6 +235,73 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
         {
             Assert.HasCount(1, reimbursements);
         }
+    }
+
+    [TestMethod]
+    public async Task ModelIncludesTierBreakdownOfAcceptedParticipants()
+    {
+        {
+            var a1 = new Participant("a1@example.org") { TravelReimbursementTier = "A", Status = ParticipantStatus.Accepted };
+            var a2 = new Participant("a2@example.org") { TravelReimbursementTier = "A", Status = ParticipantStatus.CheckedIn };
+            var a3 = new Participant("a3@example.org") { TravelReimbursementTier = "A", Status = ParticipantStatus.Demoed };
+            var b1 = new Participant("b1@example.org") { TravelReimbursementTier = "B", Status = ParticipantStatus.Confirmed };
+            // Not accepted, thus not counted
+            var a4 = new Participant("a4@example.org") { TravelReimbursementTier = "A", Status = ParticipantStatus.Created };
+            var b2 = new Participant("b2@example.org") { TravelReimbursementTier = "B", Status = ParticipantStatus.WithdrawnAfterConfirmation };
+            // Accepted but without a (valid) tier
+            var x1 = new Participant("x1@example.org") { Status = ParticipantStatus.Accepted };
+            var x2 = new Participant("x2@example.org") { TravelReimbursementTier = "does not exist", Status = ParticipantStatus.CheckedIn };
+
+            var currency1 = new Currency("CHF", 1);
+            var expense1 = new TravelExpense("id1", DateTimeOffset.UtcNow, "Expense 1", 10, "CHF", false) { Status = TravelExpenseStatus.Approved, Owners = { a1 } };
+            var expense2 = new TravelExpense("id2", DateTimeOffset.UtcNow, "Expense 2", 20, "CHF", false) { Status = TravelExpenseStatus.Approved, Owners = { a2 } };
+            var expense3 = new TravelExpense("id3", DateTimeOffset.UtcNow, "Expense 3", 7, "CHF", false) { Status = TravelExpenseStatus.Approved, Owners = { x2 } };
+            // Not counted since the participant is not accepted
+            var expense4 = new TravelExpense("id4", DateTimeOffset.UtcNow, "Expense 4", 30, "CHF", false) { Status = TravelExpenseStatus.Approved, Owners = { b2 } };
+
+            Db.Participants.Add(a1, a2, a3, a4, b1, b2, x1, x2);
+            Db.Currencies.Add(currency1);
+            Db.TravelExpenses.Add(expense1, expense2, expense3, expense4);
+            await Db.CommitAsync();
+        }
+
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var model = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(await page.GetModelAsync(await GetAdminAsync()));
+
+        Assert.AreSequenceEqual([
+            // 10 and 20 rounded to 5 stay as is
+            new("A", 999m, 3, 2, 30m, 2997m),
+            new("B", 1111m, 1, 0, 0m, 1111m),
+            // no cap and thus no rounding
+            new(null, null, 2, 1, 7m, null)
+        ], model.Tiers);
+    }
+
+    [TestMethod]
+    public async Task ModelTierBreakdownOmitsNoTierWhenEveryoneHasOne()
+    {
+        Db.Participants.Add(new Participant("a1@example.org") { TravelReimbursementTier = "A", Status = ParticipantStatus.Accepted });
+        await Db.CommitAsync();
+
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var model = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(await page.GetModelAsync(await GetAdminAsync()));
+
+        Assert.AreSequenceEqual([
+            new("A", 999m, 1, 0, 0m, 999m),
+            new("B", 1111m, 0, 0, 0m, 0m)
+        ], model.Tiers);
+    }
+
+    [TestMethod]
+    public async Task ModelHasNoTierBreakdownWithoutPolicy()
+    {
+        Db.Participants.Add(new Participant("a1@example.org") { TravelReimbursementTier = "A", Status = ParticipantStatus.Accepted });
+        await Db.CommitAsync();
+
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, null);
+        var model = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(await page.GetModelAsync(await GetAdminAsync()));
+
+        Assert.IsEmpty(model.Tiers);
     }
 
     // Nothing we can do in this case but throw, since "hiding" the expense would be a terrible idea
@@ -251,7 +318,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
             await Db.CommitAsync();
         }
 
-        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var page = new TravelReimbursementPage(Db.Participants, Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
         var admin = await GetAdminAsync();
         await Assert.ThrowsAsync<InvalidOperationException>(() => page.GetModelAsync(admin));
     }

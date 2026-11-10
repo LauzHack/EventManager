@@ -8,6 +8,7 @@ using EventManager.Models;
 namespace EventManager.AdminPages;
 
 public sealed class TravelReimbursementPage(
+    IQueryable<Participant> participants,
     IQueryable<TravelExpense> expenses,
     IQueryable<Currency> currencies,
     TravelReimbursementPolicy? policy
@@ -54,6 +55,7 @@ public sealed class TravelReimbursementPage(
         );
         var reimbursements = new List<ParticipantReimbursement>();
         var forecast = new List<ParticipantReimbursement>();
+        var forecastParticipants = new List<(Participant, decimal)>();
         // Iterate over just the keys so we can reuse the participant ordering logic
         foreach (var participant in expensesByOwner.Keys.OrderByName())
         {
@@ -68,12 +70,52 @@ public sealed class TravelReimbursementPage(
             }
             // The forecast includes everyone who may come to the event, but only checked-in participants can actually be reimbursed
             forecast.Add(reimbursement);
+            forecastParticipants.Add((participant, reimbursement.Amount));
             if (participant.Status >= ParticipantStatus.CheckedIn)
             {
                 reimbursements.Add(reimbursement);
             }
         }
-        return new Model(reimbursements, forecast);
+        return new Model(
+            reimbursements,
+            forecast,
+            await ComputeTierBreakdownAsync(forecastParticipants)
+        );
+    }
+
+    private async Task<IReadOnlyCollection<TierCount>> ComputeTierBreakdownAsync(
+        IReadOnlyCollection<(Participant Participant, decimal Amount)> forecastParticipants
+    )
+    {
+        if (policy is null)
+        {
+            return [];
+        }
+        // Participants whose tier is missing or no longer exists are grouped under "no tier", represented as an empty string here
+        string TierOf(string? tier) => tier is not null && policy.Tiers.ContainsKey(tier) ? tier : "";
+        var acceptedTiers = await participants
+            .Where(p => p.Status >= ParticipantStatus.Accepted)
+            .Select(p => p.TravelReimbursementTier)
+            .ToCollectionAsync();
+        var acceptedCounts = acceptedTiers.CountBy(TierOf, StringComparer.Ordinal).ToDictionary(StringComparer.Ordinal);
+        var forecastByTier = forecastParticipants
+            .GroupBy(f => TierOf(f.Participant.TravelReimbursementTier), StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => (Count: g.Count(), Total: g.Sum(f => f.Amount)), StringComparer.Ordinal);
+
+        var results = new List<TierCount>();
+        foreach (var (name, cap) in policy.Tiers.OrderBy(t => t.Value).ThenBy(t => t.Key, StringComparer.Ordinal))
+        {
+            var count = acceptedCounts.GetValueOrDefault(name);
+            var expected = forecastByTier.GetValueOrDefault(name);
+            results.Add(new(name, cap, count, expected.Count, expected.Total, cap * count));
+        }
+        var noTierCount = acceptedCounts.GetValueOrDefault("");
+        if (noTierCount > 0)
+        {
+            var expected = forecastByTier.GetValueOrDefault("");
+            results.Add(new(null, null, noTierCount, expected.Count, expected.Total, null));
+        }
+        return results;
     }
 
     private ParticipantReimbursement? ComputeReimbursement(
@@ -137,9 +179,29 @@ public sealed class TravelReimbursementPage(
     /// </summary>
     /// <param name="Reimbursements">Participants who can be reimbursed now, i.e., who checked in.</param>
     /// <param name="Forecast">Indicative reimbursements for all accepted participants, whether they checked in or not.</param>
+    /// <param name="Tiers">Indicative breakdown of accepted participants per reimbursement tier, ordered by cap.</param>
     public sealed record Model(
         IReadOnlyCollection<ParticipantReimbursement> Reimbursements,
-        IReadOnlyCollection<ParticipantReimbursement> Forecast
+        IReadOnlyCollection<ParticipantReimbursement> Forecast,
+        IReadOnlyCollection<TierCount> Tiers
+    );
+
+    /// <summary>
+    /// Indicative statistics for one reimbursement tier.
+    /// </summary>
+    /// <param name="Name">The tier's name, or <c>null</c> for accepted participants without a valid tier.</param>
+    /// <param name="Cap">The tier's cap, or <c>null</c> for participants without a valid tier.</param>
+    /// <param name="Participants">Accepted participants in this tier.</param>
+    /// <param name="ParticipantsWithExpenses">Those of them who have something to be reimbursed.</param>
+    /// <param name="ExpectedTotal">The total to be reimbursed to them based on their approved expenses.</param>
+    /// <param name="MaxTotal">The total if every participant in this tier is reimbursed up to the cap.</param>
+    public sealed record TierCount(
+        string? Name,
+        decimal? Cap,
+        int Participants,
+        int ParticipantsWithExpenses,
+        decimal ExpectedTotal,
+        decimal? MaxTotal
     );
 
     public sealed record ParticipantReimbursement(

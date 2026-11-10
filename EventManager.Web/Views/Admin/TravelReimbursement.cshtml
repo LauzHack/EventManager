@@ -7,6 +7,9 @@
     var forecast = Model.Data.Forecast;
     var total = reimbursements.Sum(r => r.Amount);
     var forecastTotal = forecast.Sum(r => r.Amount);
+    var tiers = Model.Data.Tiers;
+    var acceptedCount = tiers.Sum(t => t.Participants);
+    var maxTotal = tiers.Sum(t => t.MaxTotal ?? 0);
 }
 
 <style>
@@ -137,48 +140,88 @@ else
     </section>
 }
 
-@if (forecast.Count > 0)
+@if (forecast.Count > 0 || acceptedCount > 0)
 {
-    <section>
-        <h2>Recap</h2>
-        <p>
-            <em>
-                These totals are indicative. They include all accepted participants with approved expenses, even those who have not checked in yet@(hasDemos ? ", and participants must demo their project before being reimbursed" : "").
-                The final amounts may be lower.
-            </em>
-        </p>
-        <p>
-            Expected total: <strong>@currencyCode @forecastTotal</strong>
-        </p>
-        <p>
-            Participants with approved expenses: <strong>@forecast.Count</strong>
-            (average <strong>@currencyCode @Math.Round(forecastTotal / forecast.Count, 2)</strong> per participant)
-        </p>
-        <details class="noprint">
-            <summary>Per-participant totals</summary>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Participant</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var reimbursement in forecast)
-                    {
+    <section class="noprint">
+        <details>
+            <summary>Indicative forecast <em>(click to expand)</em></summary>
+            <p>
+                <em>
+                    These numbers are indicative and will not be the real ones.
+                    They include all currently accepted participants, even those who have not checked in yet,
+                    so the real numbers will be different after check-in@(hasDemos ? ", and participants must demo their project before being reimbursed" : "").
+                </em>
+            </p>
+            <p>
+                Expected total: <strong>@currencyCode @forecastTotal</strong>
+            </p>
+            <p>
+                Participants with approved expenses: <strong>@forecast.Count</strong> out of <strong>@acceptedCount</strong> accepted
+                @if (forecast.Count > 0)
+                {
+                    @:(average <strong>@currencyCode @Math.Round(forecastTotal / forecast.Count, 2)</strong> per participant)
+                }
+            </p>
+            <p>
+                Maximum total if every accepted participant is reimbursed up to their cap: <strong>@currencyCode @maxTotal</strong>
+            </p>
+            @if (tiers.Count > 0)
+            {
+                <table>
+                    <thead>
                         <tr>
-                            <td>@(reimbursement.FullName ?? "???")</td>
-                            <td>@currencyCode @reimbursement.Amount</td>
+                            <th>Tier</th>
+                            <th>Cap</th>
+                            <th>Accepted</th>
+                            <th>With approved expenses</th>
+                            <th>Expected</th>
+                            <th>Maximum</th>
                         </tr>
-                    }
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <th>Total</th>
-                        <th>@currencyCode @forecastTotal</th>
-                    </tr>
-                </tfoot>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var tier in tiers)
+                        {
+                            <tr>
+                                <td>@(tier.Name ?? "No tier chosen")</td>
+                                <td>@(tier.Cap is null ? "" : currencyCode + " " + tier.Cap)</td>
+                                <td>@tier.Participants</td>
+                                <td>@tier.ParticipantsWithExpenses</td>
+                                <td>@currencyCode @tier.ExpectedTotal</td>
+                                <td>@(tier.MaxTotal is null ? "" : currencyCode + " " + tier.MaxTotal)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="2">Total</th>
+                            <th>@acceptedCount</th>
+                            <th>@forecast.Count</th>
+                            <th>@currencyCode @forecastTotal</th>
+                            <th>@currencyCode @maxTotal</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            }
+            @if (forecast.Count > 0)
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Participant</th>
+                            <th>Expected</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var reimbursement in forecast)
+                        {
+                            <tr>
+                                <td>@(reimbursement.FullName ?? "???")</td>
+                                <td>@currencyCode @reimbursement.Amount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
         </details>
     </section>
 }
