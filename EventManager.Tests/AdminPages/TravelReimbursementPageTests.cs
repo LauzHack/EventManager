@@ -71,7 +71,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
         var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
         var model = await page.GetModelAsync(await GetAdminAsync());
 
-        var reimbursements = Assert.IsInstanceOfType<IReadOnlyCollection<TravelReimbursementPage.ParticipantReimbursement>>(model);
+        var reimbursements = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(model).Reimbursements;
         Assert.AreSequenceEqual([
             // (5 / 2) + (30 * 1.2) + (47 * 1.2 / 2 * 2) is 94.9, rounded to upper 5 -> 95
             new("Alice Apple", "alice@example.org", false, 95m, 999m, null),
@@ -79,6 +79,39 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
             new("Bob Banana", "bob@example.org", true, 25m, 999m, null)
             // not the 3rd participant, who isn't checked in
         ], reimbursements);
+
+        var forecast = ((TravelReimbursementPage.Model) model!).Forecast;
+        Assert.AreSequenceEqual([
+            new("Alice Apple", "alice@example.org", false, 95m, 999m, null),
+            new("Bob Banana", "bob@example.org", true, 25m, 999m, null),
+            // the 3rd participant is included since they are confirmed: (47 * 1.2 / 2 * 2) + 20 is 76.4, rounded to upper 5 -> 80
+            new("Carol Coconut", "carol@example.org", false, 80m, 999m, null)
+        ], forecast);
+    }
+
+    [TestMethod]
+    public async Task ForecastExcludesParticipantsNotAccepted()
+    {
+        {
+            var participant1 = new Participant("alice@example.org") { GivenName = "Alice", FamilyName = "Apple", TravelReimbursementTier = "A", Status = ParticipantStatus.Accepted };
+            var participant2 = new Participant("bob@example.org") { GivenName = "Bob", FamilyName = "Banana", TravelReimbursementTier = "A", Status = ParticipantStatus.WithdrawnAfterConfirmation };
+            var currency1 = new Currency("CHF", 1);
+            var expense1 = new TravelExpense("id1", DateTimeOffset.UtcNow, "Expense 1", 10, "CHF", false) { Status = TravelExpenseStatus.Approved, Owners = { participant1 } };
+            var expense2 = new TravelExpense("id2", DateTimeOffset.UtcNow, "Expense 2", 10, "CHF", false) { Status = TravelExpenseStatus.Approved, Owners = { participant2 } };
+
+            Db.Participants.Add(participant1, participant2);
+            Db.Currencies.Add(currency1);
+            Db.TravelExpenses.Add(expense1, expense2);
+            await Db.CommitAsync();
+        }
+
+        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var model = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(await page.GetModelAsync(await GetAdminAsync()));
+
+        Assert.IsEmpty(model.Reimbursements);
+        Assert.AreSequenceEqual([
+            new("Alice Apple", "alice@example.org", false, 10m, 999m, null)
+        ], model.Forecast);
     }
 
     [TestMethod]
@@ -126,7 +159,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
         var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, policy);
         var model = await page.GetModelAsync(await GetAdminAsync());
 
-        var reimbursements = Assert.IsInstanceOfType<IReadOnlyCollection<TravelReimbursementPage.ParticipantReimbursement>>(model);
+        var reimbursements = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(model).Reimbursements;
         Assert.AreSequenceEqual([
             // 10 rounded to upper 3 -> 12
             new("Alice Apple", "alice@example.org", false, 12m, 10m, null),
@@ -171,7 +204,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
         var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, mode == 3 ? null : ReimbursementPolicy);
         var model = await page.GetModelAsync(await GetAdminAsync());
 
-        var reimbursements = Assert.IsInstanceOfType<IReadOnlyCollection<TravelReimbursementPage.ParticipantReimbursement>>(model);
+        var reimbursements = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(model).Reimbursements;
         if (mode != 3)
         {
             Assert.HasCount(1, reimbursements);

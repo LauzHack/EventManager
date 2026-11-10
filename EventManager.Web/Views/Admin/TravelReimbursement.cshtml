@@ -1,17 +1,12 @@
-@model PageModel<IReadOnlyCollection<TravelReimbursementPage.ParticipantReimbursement>, Admin>
+@model PageModel<TravelReimbursementPage.Model, Admin>
 
 @{
     var hasDemos = Model.Config.EventLimits!.ProjectTeamSize > 0;
-}
-
-@if (Model.Data.Count == 0)
-{
-    <section>
-        <p>
-            There are no participants to be reimbursed yet.
-        </p>
-    </section>
-    return;
+    var currencyCode = Model.Config.TravelReimbursementPolicy!.EventCurrencyCode;
+    var reimbursements = Model.Data.Reimbursements;
+    var forecast = Model.Data.Forecast;
+    var total = reimbursements.Sum(r => r.Amount);
+    var forecastTotal = forecast.Sum(r => r.Amount);
 }
 
 <style>
@@ -34,95 +29,156 @@
     }
 </style>
 
-<section class="noprint">
-    <p>
-        Print this page if you want to have participants sign when being reimbursed.
-    </p>
-    @if (hasDemos)
-    {
+@if (reimbursements.Count == 0)
+{
+    <section>
         <p>
-            View this page while reimbursing to check that participants have demoed. Don't forget to refresh the page!
+            There are no participants to be reimbursed yet.
         </p>
-    }
-    <p>
-        Total reimbursement amount: <strong>@Model.Config.TravelReimbursementPolicy!.EventCurrencyCode @Model.Data.Sum(r => r.Amount)</strong>
-    </p>
-
-    <script src="~/pagination.js"></script>
-    <input id="search"
-           type="search"
-           placeholder="Search by name..."
-           autocomplete="off" />
-    <table>
-        @foreach (var reimbursement in Model.Data)
+    </section>
+}
+else
+{
+    <section class="noprint">
+        <h2>Reimburse participants</h2>
+        <p>
+            Print this page if you want to have participants sign when being reimbursed.
+        </p>
+        @if (hasDemos)
         {
-            <tr data-search="@reimbursement.FullName">
-                <td>
-                    <p>
-                        <strong>@(reimbursement.FullName ?? "???")</strong>
-                    </p>
-                    <p>
-                        <small>@reimbursement.EmailAddress</small>
-                    </p>
-                </td>
-                @if (hasDemos)
-                {
-                    <td>
-                        @if (reimbursement.HasDemoed)
-                        {
-                            <strong>Demoed</strong>
-                        }
-                        else
-                        {
-                            <small>Not demoed yet</small>
-                        }
-                    </td>
-                }
-                <td>
-                    <p>
-                        <strong>@Model.Config.TravelReimbursementPolicy!.EventCurrencyCode @reimbursement.Amount</strong>
-                    </p>
-                    <p>
-                        <small>Cap: @(reimbursement.Cap is null ? "???" : reimbursement.Cap)</small>
-                    </p>
-                </td>
-                <td>@(reimbursement.Remarks ?? "")</td>
-            </tr>
+            <p>
+                View this page while reimbursing to check that participants have demoed. Don't forget to refresh the page!
+            </p>
         }
-    </table>
-    <script>
-            setupPagination({
-                root: 'table',
-                itemsSelector: 'tr',
-                pageSize: 10,
-                searchSelector: '#search',
-                emptyMessage: 'No participants to be reimbursed match the search.'
-            });
-    </script>
-</section>
-
-<section class="onlyprint">
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email address</th>
-                <th>Amount</th>
-                <th>Cap</th>
-                <th>Signature</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var reimbursement in Model.Data)
+        <script src="~/pagination.js"></script>
+        <input id="search"
+               type="search"
+               placeholder="Search by name..."
+               autocomplete="off" />
+        <table id="reimbursements">
+            @foreach (var reimbursement in reimbursements)
             {
-                <tr>
-                    <td>@(reimbursement.FullName ?? "???")</td>
-                    <td style="word-break: break-all"><small>@reimbursement.EmailAddress</small></td>
-                    <td><strong>@(reimbursement.Amount)</strong></td>
-                    <td>@(reimbursement.Cap is null ? "???" : reimbursement.Cap)</td>
-                    <td style="width: 20em"></td>
+                <tr data-search="@reimbursement.FullName">
+                    <td>
+                        <p>
+                            <strong>@(reimbursement.FullName ?? "???")</strong>
+                        </p>
+                        <p>
+                            <small>@reimbursement.EmailAddress</small>
+                        </p>
+                    </td>
+                    @if (hasDemos)
+                    {
+                        <td>
+                            @if (reimbursement.HasDemoed)
+                            {
+                                <strong>Demoed</strong>
+                            }
+                            else
+                            {
+                                <small>Not demoed yet</small>
+                            }
+                        </td>
+                    }
+                    <td>
+                        <p>
+                            <strong>@currencyCode @reimbursement.Amount</strong>
+                        </p>
+                        <p>
+                            <small>Cap: @(reimbursement.Cap is null ? "???" : reimbursement.Cap)</small>
+                        </p>
+                    </td>
+                    <td>@(reimbursement.Remarks ?? "")</td>
                 </tr>
             }
-        </tbody>
-    </table>
-</section>
+        </table>
+        <script>
+                setupPagination({
+                    root: '#reimbursements',
+                    itemsSelector: 'tr',
+                    pageSize: 10,
+                    searchSelector: '#search',
+                    emptyMessage: 'No participants to be reimbursed match the search.'
+                });
+        </script>
+    </section>
+
+    <section class="onlyprint">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email address</th>
+                    <th>Amount</th>
+                    <th>Cap</th>
+                    <th>Signature</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var reimbursement in reimbursements)
+                {
+                    <tr>
+                        <td>@(reimbursement.FullName ?? "???")</td>
+                        <td style="word-break: break-all"><small>@reimbursement.EmailAddress</small></td>
+                        <td><strong>@(reimbursement.Amount)</strong></td>
+                        <td>@(reimbursement.Cap is null ? "???" : reimbursement.Cap)</td>
+                        <td style="width: 20em"></td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="2">Total</th>
+                    <th>@total</th>
+                    <th colspan="2"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </section>
+}
+
+@if (forecast.Count > 0)
+{
+    <section>
+        <h2>Recap</h2>
+        <p>
+            <em>
+                These totals are indicative. They include all accepted participants with approved expenses, even those who have not checked in yet@(hasDemos ? ", and participants must demo their project before being reimbursed" : "").
+                The final amounts may be lower.
+            </em>
+        </p>
+        <p>
+            Expected total: <strong>@currencyCode @forecastTotal</strong>
+        </p>
+        <p>
+            Participants with approved expenses: <strong>@forecast.Count</strong>
+            (average <strong>@currencyCode @Math.Round(forecastTotal / forecast.Count, 2)</strong> per participant)
+        </p>
+        <details class="noprint">
+            <summary>Per-participant totals</summary>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Participant</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reimbursement in forecast)
+                    {
+                        <tr>
+                            <td>@(reimbursement.FullName ?? "???")</td>
+                            <td>@currencyCode @reimbursement.Amount</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th>@currencyCode @forecastTotal</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </details>
+    </section>
+}
