@@ -115,6 +115,32 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
     }
 
     [TestMethod]
+    public async Task ModelExcludesParticipantsWithNothingToReimburse()
+    {
+        {
+            var participant1 = new Participant("alice@example.org") { GivenName = "Alice", FamilyName = "Apple", TravelReimbursementTier = "A", Status = ParticipantStatus.CheckedIn };
+            var participant2 = new Participant("bob@example.org") { GivenName = "Bob", FamilyName = "Banana", TravelReimbursementTier = "A", Status = ParticipantStatus.Confirmed };
+            var currency1 = new Currency("CHF", 1);
+            // Already fully reimbursed
+            var expense1 = new TravelExpense("id1", DateTimeOffset.UtcNow, "Expense 1", 10, "CHF", false) { Status = TravelExpenseStatus.Approved, Owners = { participant1 } };
+            var expense2 = new TravelExpense("id2", DateTimeOffset.UtcNow, "Expense 2", 10, "CHF", false) { Status = TravelExpenseStatus.Reimbursed, Owners = { participant1 } };
+            // Not approved
+            var expense3 = new TravelExpense("id3", DateTimeOffset.UtcNow, "Expense 3", 10, "CHF", false) { Owners = { participant2 } };
+
+            Db.Participants.Add(participant1, participant2);
+            Db.Currencies.Add(currency1);
+            Db.TravelExpenses.Add(expense1, expense2, expense3);
+            await Db.CommitAsync();
+        }
+
+        var page = new TravelReimbursementPage(Db.TravelExpenses, Db.Currencies, ReimbursementPolicy);
+        var model = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(await page.GetModelAsync(await GetAdminAsync()));
+
+        Assert.IsEmpty(model.Reimbursements);
+        Assert.IsEmpty(model.Forecast);
+    }
+
+    [TestMethod]
     public async Task ModelIncludesTierCaps()
     {
         {
