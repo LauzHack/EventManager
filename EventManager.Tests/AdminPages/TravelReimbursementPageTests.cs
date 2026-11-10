@@ -80,7 +80,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
             // not the 3rd participant, who isn't checked in
         ], reimbursements);
 
-        var forecast = ((TravelReimbursementPage.Model) model!).Forecast;
+        var forecast = ((TravelReimbursementPage.Model)model!).Forecast;
         Assert.AreSequenceEqual([
             new("Alice Apple", "alice@example.org", false, 95m, 999m, null),
             new("Bob Banana", "bob@example.org", true, 25m, 999m, null),
