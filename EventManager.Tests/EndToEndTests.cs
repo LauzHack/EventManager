@@ -720,7 +720,7 @@ public sealed class EndToEndTests
 
         // Alice and Bob are both marked as having demoed in the travel reimbursement page,
         var reimbursementPage = await system.ExecuteRequestAndAssertSuccessAsync(adminStorage, "/Admin/TravelReimbursement");
-        var reimbursements = Assert.IsInstanceOfType<IReadOnlyCollection<TravelReimbursementPage.ParticipantReimbursement>>(reimbursementPage.Model);
+        var reimbursements = Assert.IsInstanceOfType<TravelReimbursementPage.Model>(reimbursementPage.Model).Reimbursements;
         var aliceReimbursement = reimbursements.First(r => r.EmailAddress.Equals("alice@example.org", StringComparison.OrdinalIgnoreCase));
         Assert.AreEqual(65m, aliceReimbursement.Amount);
         var bobReimbursement = reimbursements.First(r => r.EmailAddress.Equals("bob@example.org", StringComparison.OrdinalIgnoreCase));
