@@ -55,7 +55,8 @@
                         <strong>@project.Title</strong>
                         @foreach (var award in Model.Awards.GetValueOrDefault(project, []))
                         {
-                            <mark>@award</mark>
+                            @* nowrap means the entire award will be on a single line, which avoids confusion *@
+                            <mark style="white-space: nowrap">@award</mark>
                         }
                     </header>
                     <img id="img-@project.ThumbnailId" style="display: none; max-height: 20vh; margin: auto" />
