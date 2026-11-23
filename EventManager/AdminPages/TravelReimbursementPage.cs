@@ -30,7 +30,7 @@ public sealed class TravelReimbursementPage(IQueryable<TravelExpense> expenses, 
         {
             foreach (var owner in expense.Owners)
             {
-                if (owner.Status < ParticipantStatus.CheckedIn)
+                if (owner.Status < ParticipantStatus.CheckedIn || expense.Status is TravelExpenseStatus.Submitted)
                 {
                     continue;
                 }
@@ -55,7 +55,7 @@ public sealed class TravelReimbursementPage(IQueryable<TravelExpense> expenses, 
             {
                 if (!currenciesByCode.TryGetValue(expense.CurrencyCode, out var expenseCurrency))
                 {
-                    throw new InvalidOperationException($"The following currency code is unknown, which should never happen: {expense.CurrencyCode}");
+                    throw new InvalidOperationException($"The following currency code is unknown, which should never happen: '{expense.CurrencyCode}'");
                 }
                 var convertedExpenseAmount = expense.AmountToReimbursePerPerson * expenseCurrency.ExchangeRate;
                 if (expense.Status is TravelExpenseStatus.Reimbursed)

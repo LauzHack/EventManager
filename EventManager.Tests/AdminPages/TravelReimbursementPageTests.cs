@@ -180,7 +180,7 @@ public sealed class TravelReimbursementPageTests : AdminTestsBase
 
     // Nothing we can do in this case but throw, since "hiding" the expense would be a terrible idea
     [TestMethod]
-    public async Task ModelCrashesIfExpenseIsUnexpectedlyInUnknownCurrency()
+    public async Task ModelCrashesIfApprovedExpenseIsUnexpectedlyInUnknownCurrency()
     {
         {
             var participant1 = new Participant("bob@example.org") { GivenName = "Bob", FamilyName = "Banana", TravelReimbursementTier = "A", Status = ParticipantStatus.Demoed };
