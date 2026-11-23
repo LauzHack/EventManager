@@ -9,8 +9,10 @@ using System.Threading.Tasks;
 using EventManager.Abstractions;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
@@ -33,6 +35,17 @@ public sealed class Program
                 await system.RunPeriodicTasksAsync();
             }
         }));
+        // Backups can be very large, e.g., LauzHack 2026 with ~1500 applicants and ~250 people submitting projects was 250 MB.
+        // Since we enforce size limits for individual files and strings anyway, let's disable all limits.
+        // (If an attacker wants to create a lot of data, they can always create extremely many accounts to do that.)
+        builder.WebHost.ConfigureKestrel(serverOptions =>
+        {
+            serverOptions.Limits.MaxRequestBodySize = null;
+        });
+        builder.Services.Configure<FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = long.MaxValue;
+        });
 
         var app = builder.Build();
         app.UseStaticFiles();
