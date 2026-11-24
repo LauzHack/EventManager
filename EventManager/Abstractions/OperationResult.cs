@@ -52,9 +52,10 @@ public abstract record OperationResult(Status Status, string Message)
     /// Display of the public projects gallery.
     /// </summary>
     /// <param name="EventTitle">The event title.</param>
-    /// <param name="Contents">The projects, in order.</param>
-    /// <param name="Awards">The awards, if public.</param>
-    public sealed record Projects(string EventTitle, IReadOnlyCollection<Project> Contents, IReadOnlyDictionary<Project, IReadOnlyCollection<string>> Awards)
+    /// <param name="Contents">The projects.</param>
+    /// <param name="ChallengeSetters">The challenge setters.</param>
+    /// <param name="ShowAwards">Whether awards are public.</param>
+    public sealed record Projects(string EventTitle, IReadOnlyCollection<Project> Contents, IReadOnlyCollection<ChallengeSetter> ChallengeSetters, bool ShowAwards)
         : OperationResult(Status.None, "");
 
     /// <summary>

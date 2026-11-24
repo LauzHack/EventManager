@@ -752,35 +752,33 @@ public sealed class EndToEndTests
         Assert.AreEqual("FriendFinder", project.Title);
         Assert.AreSequenceEqual(["alice@example.org", "bob@example.org"], project.Team.Select(m => m.EmailAddress), SequenceOrder.InAnyOrder);
         // but as the event is not over its awards are not visible.
-        Assert.IsEmpty(gallery.Awards);
+        Assert.IsFalse(gallery.ShowAwards);
 
         // The organizers can however view the awards in the challenges list.
         var adminChallengesPage = await system.ExecuteRequestAndAssertSuccessAsync(adminStorage, "/Admin/Challenges");
-        var challengesAndProjects = Assert.IsInstanceOfType<IReadOnlyCollection<ChallengesPage.ChallengeSetterAndProjects>>(adminChallengesPage.Model);
-        Assert.HasCount(3, challengesAndProjects);
-        Assert.AreEqual("Overall", challengesAndProjects.ElementAt(0).ChallengeSetter.Name, StringComparer.Ordinal);
-        Assert.HasCount(1, challengesAndProjects.ElementAt(0).Projects);
-        Assert.HasCount(1, challengesAndProjects.ElementAt(0).ChallengeSetter.Awards);
-        Assert.AreEqual("Top", challengesAndProjects.ElementAt(0).ChallengeSetter.Awards.Single().Name);
-        Assert.AreEqual(challengesAndProjects.ElementAt(0).Projects.Single().Key.Id, challengesAndProjects.ElementAt(0).ChallengeSetter.Awards.Single().ProjectId, StringComparer.Ordinal);
-        Assert.AreEqual("Some Company", challengesAndProjects.ElementAt(1).ChallengeSetter.Name, StringComparer.Ordinal);
-        Assert.HasCount(1, challengesAndProjects.ElementAt(1).Projects);
-        Assert.HasCount(1, challengesAndProjects.ElementAt(1).ChallengeSetter.Awards);
-        Assert.AreEqual("1st place", challengesAndProjects.ElementAt(1).ChallengeSetter.Awards.Single().Name);
-        Assert.AreEqual(challengesAndProjects.ElementAt(1).Projects.Single().Key.Id, challengesAndProjects.ElementAt(0).ChallengeSetter.Awards.Single().ProjectId, StringComparer.Ordinal);
-        Assert.AreEqual("Yet Another Company", challengesAndProjects.ElementAt(2).ChallengeSetter.Name, StringComparer.Ordinal);
-        Assert.HasCount(1, challengesAndProjects.ElementAt(2).Projects);
-        Assert.HasCount(0, challengesAndProjects.ElementAt(2).ChallengeSetter.Awards);
+        var challengesAndProjects = Assert.IsInstanceOfType<ChallengesPage.Model>(adminChallengesPage.Model);
+        Assert.HasCount(1, challengesAndProjects.ProjectsById);
+        Assert.AreEqual("FriendFinder", challengesAndProjects.ProjectsById.First().Value.Title);
+        Assert.HasCount(3, challengesAndProjects.ChallengeSetters);
+        Assert.AreEqual("Overall", challengesAndProjects.ChallengeSetters.ElementAt(0).Name, StringComparer.Ordinal);
+        Assert.HasCount(1, challengesAndProjects.ChallengeSetters.ElementAt(0).Awards);
+        Assert.AreEqual("Top", challengesAndProjects.ChallengeSetters.ElementAt(0).Awards.ElementAt(0).Name);
+        Assert.AreEqual(overallProjects.Single().Id, challengesAndProjects.ChallengeSetters.ElementAt(0).Awards.ElementAt(0).ProjectId);
+        Assert.AreEqual("Some Company", challengesAndProjects.ChallengeSetters.ElementAt(1).Name, StringComparer.Ordinal);
+        Assert.HasCount(1, challengesAndProjects.ChallengeSetters.ElementAt(1).Awards);
+        Assert.AreEqual("1st place", challengesAndProjects.ChallengeSetters.ElementAt(1).Awards.ElementAt(0).Name);
+        Assert.AreEqual(overallProjects.Single().Id, challengesAndProjects.ChallengeSetters.ElementAt(1).Awards.ElementAt(0).ProjectId);
+        Assert.AreEqual("Yet Another Company", challengesAndProjects.ChallengeSetters.ElementAt(2).Name, StringComparer.Ordinal);
+        Assert.HasCount(0, challengesAndProjects.ChallengeSetters.ElementAt(2).Awards);
 
         // The event ends.
         await system.ExecuteRequestAndAssertSuccessAsync(adminStorage, "/Admin/End/EndJudging");
 
-        // The project now has awards in the gallery, in the right order.
+        // The project now has awards in the gallery.
         var endGallery = await system.ExecuteRequestAsync<OperationResult.Projects>([], "/Projects");
         var endProject = Assert.ContainsSingle(endGallery.Contents);
         Assert.AreEqual("FriendFinder", endProject.Title);
-        Assert.HasCount(1, endGallery.Awards);
-        Assert.AreSequenceEqual(["Overall Top", "Some Company 1st place"], endGallery.Awards[endProject], StringComparer.Ordinal);
+        Assert.IsTrue(endGallery.ShowAwards);
 
         // The challenges list and projects gallery URL are case-insensitive.
         await system.ExecuteRequestAsync<OperationResult.Projects>([], "/pRoJeCts");

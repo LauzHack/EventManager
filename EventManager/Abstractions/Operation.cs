@@ -505,18 +505,9 @@ file sealed record ProjectsViewOperation() : Operation(DefaultUserType, Operatio
         }
 
         var challengeSetters = await dependencies.Database.ChallengeSetters.OrderBy(s => s.Order).ToCollectionAsync();
-        var projectsById = await dependencies.Database.Projects.ToDictionaryAsync(p => p.Id, StringComparer.Ordinal);
-        var awards = new OrderedDictionary<Project, IReadOnlyCollection<string>>();
-        if (dependencies.Configuration.EventStatus == EventStatus.Finished)
-        {
-            foreach (var setter in challengeSetters)
-            {
-                setter.BuildAwardsMapping(projectsById, awards);
-            }
-        }
-        var nonAwardedProjects = projectsById.Values.Where(p => !awards.ContainsKey(p)).OrderBy(p => p.Title, StringComparer.OrdinalIgnoreCase);
-        var orderedProjects = awards.Select(p => p.Key).Concat(nonAwardedProjects).ToArray();
-        return new OperationResult.Projects(dependencies.Configuration.EventDetails.Title, orderedProjects, awards);
+        var projects = await dependencies.Database.Projects.ToCollectionAsync();
+        var showAwards = dependencies.Configuration.EventStatus == EventStatus.Finished;
+        return new OperationResult.Projects(dependencies.Configuration.EventDetails.Title, projects, challengeSetters, showAwards);
     }
 }
 
