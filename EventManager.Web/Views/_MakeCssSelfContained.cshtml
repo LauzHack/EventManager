@@ -1,4 +1,5 @@
-@* Integrate CSS into the page on the first load so it's self-contained *@
+@* Integrate CSS into the page on the first load so it's self-contained (and still load it by default so the page doesn't wait for styling) *@
+<link id="style-deleteme" rel="stylesheet" href="/style.css" />
 <script>
     if (document.querySelector('style') === null) {
         (async function() {
@@ -6,6 +7,8 @@
             var tag = document.createElement('style');
             tag.innerHTML = await response.text();
             document.head.appendChild(tag);
+            var existing = document.querySelector('#style-deleteme');
+            existing.remove();
         })();
     }
 </script>
