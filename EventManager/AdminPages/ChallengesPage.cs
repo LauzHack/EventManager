@@ -19,24 +19,10 @@ public sealed class ChallengesPage(DbValues<ChallengeSetter> challengeSetters, D
          : EditableView("Challenges and awards", "Manage");
 
     public override async Task<object?> GetModelAsync(Admin user)
-    {
-        var setters = await challengeSetters.OrderBy(c => c.Order).ToCollectionAsync();
-        var projectsById = await projects.ToDictionaryAsync(p => p.Id, StringComparer.Ordinal);
-        var model = new List<ChallengeSetterAndProjects>();
-        foreach (var setter in setters)
-        {
-            var awards = new OrderedDictionary<Project, IReadOnlyCollection<string>>();
-            setter.BuildAwardsMapping(projectsById, awards);
-            // Also add the projects without an award
-            var others = projectsById.Values.Where(p => !setter.IsChallengeOptIn || p.Challenges.Contains(setter.Name)).OrderBy(p => p.Title, StringComparer.OrdinalIgnoreCase);
-            foreach (var project in others)
-            {
-                awards.TryAdd(project, []);
-            }
-            model.Add(new(setter, awards));
-        }
-        return model;
-    }
+        => new Model(
+               await challengeSetters.OrderBy(c => c.Order).ToCollectionAsync(),
+               await projects.ToDictionaryAsync(p => p.Id, StringComparer.Ordinal)
+           );
 
     public async Task<StatusMessage> EditAsync(ChallengeSetterDefinition[] setters)
     {
@@ -92,5 +78,5 @@ public sealed class ChallengesPage(DbValues<ChallengeSetter> challengeSetters, D
 
     public sealed record ChallengeSetterDefinition(string Name, bool IsChallengeOptIn);
 
-    public sealed record ChallengeSetterAndProjects(ChallengeSetter ChallengeSetter, IReadOnlyDictionary<Project, IReadOnlyCollection<string>> Projects);
+    public sealed record Model(IReadOnlyCollection<ChallengeSetter> ChallengeSetters, IReadOnlyDictionary<string, Project> ProjectsById);
 }

@@ -3,25 +3,14 @@
     ViewData["Title"] = "Projects";
     Layout = "_BareLayout";
 
-    // prefix + suffix ensures it's easy to do 'includes' in JS without conflicts for challenges with common prefixes
-    string ChallengeToCssClass(string challenge) => "_" + challenge.Replace(' ', '-') + "_";
+    string challengesSeparator = "|";
+    while (Model.ChallengeSetters.Any(c => c.Name.Contains(challengesSeparator)))
+    {
+        challengesSeparator += "|";
+    }
 
     await Html.RenderPartialAsync("~/Views/_MakeCssSelfContained.cshtml");
 }
-
-<script>
-    function doFilter(elem) {
-        var value = elem.value;
-        var articles = document.getElementsByTagName('main')[0].getElementsByTagName('article');
-        for (const article of articles) {
-            if (value == '' || article.className.includes(value)) {
-                article.style.display = 'block';
-            } else {
-                article.style.display = 'none';
-            }
-        }
-    }
-</script>
 
 <main>
     @if (Model.Contents.Count == 0)
@@ -30,42 +19,51 @@
     }
     else
     {
-        var challenges = Model.Contents.SelectMany(p => p.Challenges).Distinct().Order().ToArray();
-
         <h1>@Model.EventTitle Projects</h1>
 
-        if (challenges.Length > 0)
+        if (Model.ChallengeSetters.Any(s => s.IsChallengeOptIn))
         {
-            <select x-label="Challenges"
-                    onchange="doFilter(this)">
-                <option value="" selected="selected">any</option>
-                @foreach (var challenge in challenges)
+            <select x-label="Challenge"
+                    onchange="showProjects(this.value)">
+                <option value="" selected="selected"><em>any</em></option>
+                @foreach (var setter in Model.ChallengeSetters)
                 {
-                    <option value="@ChallengeToCssClass(challenge)">@challenge</option>
+                    @if (setter.IsChallengeOptIn)
+                    {
+                        <option>@setter.Name</option>
+                    }
                 }
             </select>
         }
 
-        <section style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-around; max-width: 100%">
+        <section id="projects-container"
+                 style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-around; max-width: 100%">
             @foreach (var project in Model.Contents)
             {
+                var awardByChallenge = Model.ChallengeSetters.SelectMany(c => c.Awards.Where(a => a.ProjectId == project.Id).Select(a => (c, a)));
                 <article style="width: 25em; margin: 2em"
-                         class="@string.Join(" ", project.Challenges.Select(ChallengeToCssClass))">
+                         data-challenges="@string.Join(challengesSeparator, project.Challenges)">
                     <header style="padding: 1em; margin-bottom: 1em">
                         <strong>@project.Title</strong>
-                        @foreach (var award in Model.Awards.GetValueOrDefault(project, []))
-                        {
-                            @* nowrap means the entire award will be on a single line, which avoids confusion *@
-                            <mark style="white-space: nowrap">@award</mark>
-                        }
+                        @* without this display: flex + flex-wrap, the awards are all on the same line and overflow the container width on Firefox *@
+                        <div class="awards-container" style="display: flex; flex-wrap: wrap">
+                            @foreach (var (challengeSetter, award) in awardByChallenge)
+                            {
+                                @* nowrap to avoid confusing users if an award breaks across lines, e.g., "Sponsor X <line break> 1st prize" looking like overall 1st prize *@
+                                <mark data-order="@award.Order"
+                                      data-challenge="@challengeSetter.Name"
+                                      data-challenge-order="@challengeSetter.Order"
+                                      style="white-space: nowrap; margin-right: 0.2em">@challengeSetter.Name @award.Name</mark>
+                            }
+                        </div>
                     </header>
                     <img id="img-@project.ThumbnailId" style="display: none; max-height: 20vh; margin: auto" />
                     @* Integrate images as base64 URLs on first load so the page is self-contained *@
                     <script>
-                        (function(){
-                            var img = document.getElementById('img-@project.ThumbnailId');
+                        (function() {
+                            var img = document.getElementById('img-@(project.ThumbnailId)');
                             if (img.style.display === 'none') {
-                                (async function()  {
+                                (async function() {
                                     var response = await fetch('/File/@(project.ThumbnailId)');
                                     var buffer = await response.arrayBuffer();
                                     var base64 = await new Promise(r => {
@@ -94,4 +92,48 @@
             }
         </section>
     }
+
+    @* Shows projects matching the selected challenge (all, if none is selected), and sorts them and their awards so the selected challenge's come first (or the original order, if none is selected) *@
+    <script>
+        function indexOf(award) {
+            return 1000 * parseInt(award.dataset.challengeOrder, 10) + parseInt(award.dataset.order, 10);
+        }
+        function orderOf(project, challenge) {
+            const awardsContainer = project.querySelector(".awards-container");
+            const awards = Array.from(awardsContainer.children);
+            if (challenge === "") {
+                return Math.min(Number.MAX_VALUE, ...awards.map(indexOf));
+            }
+            return Math.min(Number.MAX_VALUE, ...awards.filter(a => a.dataset.challenge === challenge).map(a => parseInt(a.dataset.order, 10)));
+        }
+        function showProjects(challenge) {
+            const projectsContainer = document.querySelector("#projects-container");
+            const projects = Array.from(projectsContainer.children);
+            projects.forEach(project => {
+                const awardsContainer = project.querySelector(".awards-container");
+                const awards = Array.from(awardsContainer.children);
+                if (challenge === "") {
+                    project.style.display = 'block';
+                    awards.sort((a, b) => indexOf(a) - indexOf(b));
+                } else if (project.dataset.challenges.split("@challengesSeparator").includes(challenge)) {
+                    project.style.display = 'block';
+                    awards.sort((a, b) => {
+                        if (a.dataset.challenge === challenge) {
+                            return -1;
+                        }
+                        if (b.dataset.challenge === challenge) {
+                            return 1;
+                        }
+                        return indexOf(a) - indexOf(b);
+                    });
+                } else {
+                    project.style.display = 'none';
+                }
+                awardsContainer.append(...awards);
+            });
+            projects.sort((p1, p2) => orderOf(p1, challenge) - orderOf(p2, challenge));
+            projectsContainer.append(...projects);
+        }
+        showProjects("");
+    </script>
 </main>

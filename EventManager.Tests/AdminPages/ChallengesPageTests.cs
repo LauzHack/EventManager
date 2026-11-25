@@ -38,7 +38,7 @@ public sealed class ChallengesPageTests : AdminTestsBase
     }
 
     [TestMethod]
-    public async Task ModelFiltersProjectsForOptInChallenges()
+    public async Task ModelHasProjectsAndChallenges()
     {
         {
             var alice = new Participant("alice@example.org") { Status = ParticipantStatus.CheckedIn };
@@ -51,8 +51,8 @@ public sealed class ChallengesPageTests : AdminTestsBase
                 new Project("c", "xxx", "Middle", "Middle long", "https://example.org", "idC") { Team = { carol }, Challenges = ["First"] }
             );
             Db.ChallengeSetters.Add(
-                new("First", 0, true),
                 new("Second", 1, false),
+                new("First", 0, true),
                 new("Awarder", 2, true) { Awards = { new(0, "Top", "a") } }
             );
             await Db.CommitAsync();
@@ -61,18 +61,16 @@ public sealed class ChallengesPageTests : AdminTestsBase
         var page = GetPage();
         var admin = await GetAdminAsync();
         var model = await page.GetModelAsync(admin);
-        var typedModel = Assert.IsInstanceOfType<IReadOnlyCollection<ChallengesPage.ChallengeSetterAndProjects>>(model);
+        var typedModel = Assert.IsInstanceOfType<ChallengesPage.Model>(model);
 
-        // and they're sorted case-insensitive with awards first!
-        Assert.HasCount(3, typedModel);
-        Assert.AreEqual("First", typedModel.ElementAt(0).ChallengeSetter.Name, StringComparer.Ordinal);
-        Assert.AreSequenceEqual(["xxx", "Zzz"], typedModel.ElementAt(0).Projects.Select(p => p.Key.Title), StringComparer.Ordinal);
-        Assert.AreEqual("Second", typedModel.ElementAt(1).ChallengeSetter.Name, StringComparer.Ordinal);
-        Assert.AreSequenceEqual(["Aaa", "xxx", "Zzz"], typedModel.ElementAt(1).Projects.Select(p => p.Key.Title), StringComparer.Ordinal);
-        Assert.AreEqual("Awarder", typedModel.ElementAt(2).ChallengeSetter.Name, StringComparer.Ordinal);
-        Assert.AreSequenceEqual(["Zzz", "Aaa"], typedModel.ElementAt(2).Projects.Select(p => p.Key.Title), StringComparer.Ordinal);
-        Assert.AreSequenceEqual(["Awarder Top"], typedModel.ElementAt(2).Projects.ElementAt(0).Value, StringComparer.Ordinal);
-        Assert.IsEmpty(typedModel.ElementAt(2).Projects.ElementAt(1).Value);
+        // and the challenges are sorted case-insensitive with awards first!
+        Assert.HasCount(3, typedModel.ChallengeSetters);
+        Assert.AreEqual("First", typedModel.ChallengeSetters.ElementAt(0).Name, StringComparer.Ordinal);
+        Assert.AreEqual("Second", typedModel.ChallengeSetters.ElementAt(1).Name, StringComparer.Ordinal);
+        Assert.AreEqual("Awarder", typedModel.ChallengeSetters.ElementAt(2).Name, StringComparer.Ordinal);
+
+        Assert.HasCount(3, typedModel.ProjectsById);
+        Assert.AreEqual(typedModel.ProjectsById.First().Key, typedModel.ProjectsById.First().Value.Id);
     }
 
     [TestMethod]

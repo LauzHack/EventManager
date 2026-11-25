@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 namespace EventManager.Models;
 
@@ -39,26 +38,4 @@ public sealed class ChallengeSetter(string name, int order, bool isChallengeOptI
     /// The awards given by this challenge setter.
     /// </summary>
     public ISet<Award> Awards { get; } = new HashSet<Award>();
-
-    /// <summary>
-    /// Given a mapping of projects by their ID, and a builder of projects to their list of awards, adds this setter's awards to the builder.
-    /// </summary>
-    public void BuildAwardsMapping(IReadOnlyDictionary<string, Project> projectsById, OrderedDictionary<Project, IReadOnlyCollection<string>> awardsBuilder)
-    {
-        foreach (var award in Awards.OrderBy(a => a.Order))
-        {
-            string awardName = $"{Name} {award.Name}";
-            if (projectsById.TryGetValue(award.ProjectId, out var project))
-            {
-                if (awardsBuilder.TryGetValue(project, out var projectAwards))
-                {
-                    awardsBuilder[project] = [.. projectAwards, awardName];
-                }
-                else
-                {
-                    awardsBuilder[project] = [awardName];
-                }
-            }
-        }
-    }
 }
